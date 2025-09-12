@@ -1,22 +1,66 @@
 package com.shop.pos
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.ImageButton
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class DashboardActivity : AppCompatActivity() {
+
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var titleTextView: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
 
-        // xml ထဲက Settings button ကို ရှာပါ
+        // UI element တွေကို ချိတ်ဆက်ပါ
+        bottomNav = findViewById(R.id.bottom_navigation)
+        titleTextView = findViewById(R.id.textViewDashboardTitle)
         val buttonSettings = findViewById<ImageButton>(R.id.buttonSettings)
 
-        // Button ကို နှိပ်လိုက်ရင် SettingsActivity ကို ဖွင့်ပေးဖို့ listener တပ်ပါ
+        // Settings Button အတွက် Logic
         buttonSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
+
+        // Bottom Navigation Bar ကို နှိပ်ရင် အလုပ်လုပ်မယ့် Listener
+        bottomNav.setOnItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.navigation_dashboard -> {
+                    titleTextView.text = "Dashboard"
+                    loadFragment(DashboardFragment())
+                    true
+                }
+                R.id.navigation_sales -> {
+                    titleTextView.text = "Sales"
+                    loadFragment(SalesFragment())
+                    true
+                }
+                R.id.navigation_inventory -> {
+                    // Toast message အစား InventoryFragment ကို ခေါ်ใช้ပါ
+                    titleTextView.text = "Inventory"
+                    loadFragment(InventoryFragment())
+                    true
+                }
+                else -> false
+            }
+        }
+
+        // App စဖွင့်ဖွင့်ချင်း Default အဖြစ် DashboardFragment ကို တင်ပေးပါ
+        if (savedInstanceState == null) {
+            bottomNav.selectedItemId = R.id.navigation_dashboard
+        }
+    }
+
+    private fun loadFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .commit()
     }
 }
