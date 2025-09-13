@@ -1,16 +1,17 @@
 package com.shop.pos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class ExpensesFragment : Fragment() {
+class ExpensesFragment : Fragment(), ExpenseItemListener {
 
     private lateinit var expensesRecyclerView: RecyclerView
     private lateinit var expensesAdapter: ExpensesAdapter
@@ -29,14 +30,40 @@ class ExpensesFragment : Fragment() {
         expensesRecyclerView = view.findViewById(R.id.recyclerViewExpenses)
         fabAddExpense = view.findViewById(R.id.fabAddExpense)
 
-        // Adapter ကို Repository ကနေရတဲ့ data list နဲ့ တည်ဆောက်ပါ
-        expensesAdapter = ExpensesAdapter(ExpensesRepository.getExpenseItems())
+        expensesAdapter = ExpensesAdapter(ExpensesRepository.getExpenseItems(), this)
         expensesRecyclerView.adapter = expensesAdapter
         expensesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         fabAddExpense.setOnClickListener {
-            // TODO: ကုန်ကျစရိတ်အသစ်ထည့်ရန် Screen အသစ်ကို ဖွင့်ပါမည်
-            Toast.makeText(requireContext(), "Add Expense Clicked", Toast.LENGTH_SHORT).show()
+            val intent = Intent(requireContext(), AddExpenseActivity::class.java)
+            startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        expensesAdapter.notifyDataSetChanged()
+    }
+
+    override fun onEditItem(position: Int) {
+        val intent = Intent(requireContext(), AddExpenseActivity::class.java)
+        intent.putExtra("EDIT_EXPENSE_POSITION", position)
+        startActivity(intent)
+    }
+
+    override fun onDeleteItem(position: Int) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("မှတ်တမ်း ဖျက်ရန်")
+            .setMessage("ဒီကုန်ကျစရိတ်မှတ်တမ်းကို ဖျက်မှာ သေချာလား?")
+            .setPositiveButton("ဖျက်မည်") { dialog, _ ->
+                ExpensesRepository.deleteExpenseItem(position)
+                expensesAdapter.notifyItemRemoved(position)
+                dialog.dismiss()
+            }
+            .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
+                dialog.cancel()
+            }
+            .create()
+            .show()
     }
 }

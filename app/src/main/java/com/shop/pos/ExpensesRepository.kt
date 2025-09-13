@@ -19,5 +19,23 @@ object ExpensesRepository {
         return expenseItems
     }
 
-    // TODO: Add, Update, Delete functions will be added later
+    fun addExpenseItem(item: ExpenseItem) {
+        expenseItems.add(0, item)
+    }
+
+    fun updateExpenseItem(position: Int, updatedItem: ExpenseItem) {
+        if (position >= 0 && position < expenseItems.size) {
+            expenseItems[position] = updatedItem
+        }
+    }
+
+    fun deleteExpenseItem(position: Int) {
+        if (position >= 0 && position < expenseItems.size) {
+            expenseItems.removeAt(position)
+        }
+    }
+    // စုစုပေါင်းကုန်ကျစရိတ်ကို တွက်ချက်ရန်
+    fun getTotalExpenses(): Double {
+        return expenseItems.sumOf { it.amount }
+    }
 }

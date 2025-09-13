@@ -36,7 +36,44 @@ object InventoryRepository {
         }
     }
 
-    // Function အသစ်: စုစုပေါင်းပစ္စည်းတန်ဖိုးကို တွက်ချက်ရန်
+    fun addStockFromPurchase(purchaseDetailItems: List<PurchaseDetailItem>) {
+        purchaseDetailItems.forEach { purchasedItem ->
+            val existingItem = inventoryItems.find { it.name.equals(purchasedItem.name, ignoreCase = true) }
+
+            if (existingItem != null) {
+                val index = inventoryItems.indexOf(existingItem)
+                // အမှားပြင်ဆင်ပြီး : 'existing' အစား 'existingItem' ကို အသုံးပြုပါ
+                val updatedQuantity = existingItem.stockQuantity + purchasedItem.quantity
+                inventoryItems[index] = existingItem.copy(stockQuantity = updatedQuantity)
+            } else {
+                val newItem = InventoryItem(
+                    name = purchasedItem.name,
+                    stockQuantity = purchasedItem.quantity,
+                    price = purchasedItem.purchasePrice
+                )
+                inventoryItems.add(newItem)
+            }
+        }
+    }
+
+    fun deductStockFromSale(saleItems: List<SaleItem>): Boolean {
+        for (saleItem in saleItems) {
+            val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }
+            if (inventoryItem == null || inventoryItem.stockQuantity < saleItem.quantity) {
+                return false
+            }
+        }
+
+        for (saleItem in saleItems) {
+            val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }!!
+            val index = inventoryItems.indexOf(inventoryItem)
+            val updatedQuantity = inventoryItem.stockQuantity - saleItem.quantity
+            inventoryItems[index] = inventoryItem.copy(stockQuantity = updatedQuantity)
+        }
+
+        return true
+    }
+
     fun getTotalInventoryValue(): Double {
         var totalValue = 0.0
         inventoryItems.forEach { item ->

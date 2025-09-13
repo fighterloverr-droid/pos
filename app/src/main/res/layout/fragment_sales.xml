@@ -47,6 +47,14 @@
                     android:hint="ဖုန်းနံပါတ်"
                     android:inputType="phone" />
 
+                <EditText
+                    android:id="@+id/editTextCustomerAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="ပို့ဆောင်ရန်လိပ်စာ"
+                    android:inputType="textPostalAddress" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -60,8 +68,10 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewSalesItems"
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="wrap_content"
+            android:minHeight="150dp"
             android:layout_marginTop="8dp"
+            android:nestedScrollingEnabled="false"
             android:background="@drawable/abc_list_selector_background_transition_holo_light"
             tools:listitem="@layout/list_item_sale"
             tools:itemCount="3"/>
@@ -96,17 +106,67 @@
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     tools:text="စုစုပေါင်း: 3,000 Ks" />
 
+                <EditText
+                    android:id="@+id/editTextDiscount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:hint="Discount (Ks)"
+                    android:inputType="numberDecimal"/>
+
+                <EditText
+                    android:id="@+id/editTextDeliveryFee"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:hint="ပို့ဆောင်ခ (Ks)"
+                    android:inputType="numberDecimal"/>
+
                 <TextView
                     android:id="@+id/textViewGrandTotal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:gravity="end"
                     android:textAppearance="?attr/textAppearanceHeadlineSmall"
                     android:textStyle="bold"
                     tools:text="ကျသင့်ငွေ: 3,000 Ks" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="ငွေပေးချေမှုအမျိုးအစား"
+            android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupPayment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/radioButtonPaid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ငွေရပြီး"
+                android:checked="true"/>
+            <RadioButton
+                android:id="@+id/radioButtonCod"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="COD"/>
+            <RadioButton
+                android:id="@+id/radioButtonCredit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="အကြွေး"/>
+        </RadioGroup>
 
         <LinearLayout
             android:layout_width="match_parent"

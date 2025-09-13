@@ -20,9 +20,10 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -47,32 +48,66 @@
                 android:textSize="18sp"
                 android:background="?attr/editTextBackground" />
 
-            <EditText
-                android:id="@+id/editTextTotalAmount"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="ဝယ်ယူသည့် ပစ္စည်းများ"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewPurchaseItems"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:hint="စုစုပေါင်း တန်ဖိုး (Ks)"
-                android:inputType="numberDecimal" />
+                android:layout_marginTop="8dp"
+                android:minHeight="100dp"
+                tools:listitem="@layout/list_item_purchase_detail"
+                tools:itemCount="2"/>
+
+            <Button
+                android:id="@+id/buttonAddItemToPurchase"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="ပစ္စည်းထည့်ရန်"
+                app:icon="@drawable/ic_add" />
 
             <EditText
                 android:id="@+id/editTextNotes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="24dp"
                 android:hint="မှတ်ချက် (optional)"
                 android:inputType="textMultiLine"
-                android:minLines="3"
+                android:minLines="2"
                 android:gravity="top"/>
 
-            <Button
-                android:id="@+id/buttonSavePurchase"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="သိမ်းဆည်းမည်" />
-
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="?attr/colorSurfaceContainer">
+
+        <TextView
+            android:id="@+id/textViewTotalAmount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:textStyle="bold"
+            tools:text="Total: 50,000,000 Ks"/>
+
+        <Button
+            android:id="@+id/buttonSavePurchase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="အဝယ်စာရင်း သိမ်းဆည်းမည်" />
+    </LinearLayout>
 
 </LinearLayout>

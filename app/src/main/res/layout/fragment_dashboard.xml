@@ -42,5 +42,15 @@
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1" />
         </GridLayout>
+
+        <Button
+            android:id="@+id/buttonViewSalesHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="အရောင်းမှတ်တမ်းများ ကြည့်ရန်"
+            android:layout_marginTop="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"/>
+
     </LinearLayout>
 </ScrollView>

@@ -1,22 +1,35 @@
 package com.shop.pos
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
-
+import android.content.Intent
 class SalesFragment : Fragment(), SalesItemListener {
 
+    // UI elements အသစ်တွေကို ကြေညာပါ
+    private lateinit var editTextCustomerAddress: EditText
+    private lateinit var editTextDiscount: EditText
+    private lateinit var editTextDeliveryFee: EditText
+    private lateinit var radioGroupPayment: RadioGroup
+
+    // ရှိပြီးသား UI elements
     private lateinit var salesRecyclerView: RecyclerView
     private lateinit var salesAdapter: SalesAdapter
     private lateinit var buttonAddItem: Button
@@ -39,6 +52,19 @@ class SalesFragment : Fragment(), SalesItemListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // UI Element တွေအားလုံးကို ချိတ်ဆက်ပါ
+        bindViews(view)
+
+        salesAdapter = SalesAdapter(salesItems, this)
+        salesRecyclerView.adapter = salesAdapter
+        salesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+
+        setupListeners()
+
+        updateSummary()
+    }
+
+    private fun bindViews(view: View) {
         salesRecyclerView = view.findViewById(R.id.recyclerViewSalesItems)
         buttonAddItem = view.findViewById(R.id.buttonAddItem)
         textViewSubtotal = view.findViewById(R.id.textViewSubtotal)
@@ -47,27 +73,114 @@ class SalesFragment : Fragment(), SalesItemListener {
         editTextCustomerPhone = view.findViewById(R.id.editTextCustomerPhone)
         buttonCancel = view.findViewById(R.id.buttonCancel)
         buttonConfirmSale = view.findViewById(R.id.buttonConfirmSale)
+        // UI element အသစ်တွေကို ချိတ်ဆက်ပါ
+        editTextCustomerAddress = view.findViewById(R.id.editTextCustomerAddress)
+        editTextDiscount = view.findViewById(R.id.editTextDiscount)
+        editTextDeliveryFee = view.findViewById(R.id.editTextDeliveryFee)
+        radioGroupPayment = view.findViewById(R.id.radioGroupPayment)
+    }
 
-        salesAdapter = SalesAdapter(salesItems, this)
-        salesRecyclerView.adapter = salesAdapter
-        salesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+    private fun setupListeners() {
+        buttonAddItem.setOnClickListener { showProductSelectionDialog() }
+        buttonCancel.setOnClickListener { clearSale() }
+        buttonConfirmSale.setOnClickListener { confirmSale() }
 
-        buttonAddItem.setOnClickListener {
-            showProductSelectionDialog()
+        // --- TextWatcher Logic အသစ် ---
+        // Discount (သို့) Delivery Fee EditText ထဲမှာ စာရိုက်လိုက်တိုင်း summary ကို update လုပ်ရန်
+        val textWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateSummary()
+            }
+        }
+        editTextDiscount.addTextChangedListener(textWatcher)
+        editTextDeliveryFee.addTextChangedListener(textWatcher)
+    }
+
+    private fun updateSummary() {
+        val subtotal = salesItems.sumOf { it.quantity * it.price }
+
+        // EditText ထဲက စာသားကို Double အဖြစ်ပြောင်းပါ၊ ဘာမှမရှိရင် 0.0 လို့ သတ်မှတ်ပါ
+        val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
+        val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
+
+        val grandTotal = subtotal - discount + deliveryFee
+
+        val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+
+        textViewSubtotal.text = "စုစုပေါင်း: ${numberFormat.format(subtotal.toInt())} Ks"
+        textViewGrandTotal.text = "ကျသင့်ငွေ: ${numberFormat.format(grandTotal.toInt())} Ks"
+    }
+
+    private fun confirmSale() {
+        if (salesItems.isEmpty()) {
+            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        buttonCancel.setOnClickListener {
-            clearSale()
+        // ... (stock checking logic is the same)
+        val isStockAvailable = InventoryRepository.deductStockFromSale(salesItems)
+        if (!isStockAvailable) {
+            Toast.makeText(requireContext(), "ပစ္စည်းလက်ကျန်မလုံလောက်ပါ!", Toast.LENGTH_LONG).show()
+            return
         }
 
-        buttonConfirmSale.setOnClickListener {
-            confirmSale()
-        }
+        // --- Data အပြည့်အစုံကို စုစည်းပါ (The rest of the logic is the same)
+        val customerName = editTextCustomerName.text.toString()
+        val customerPhone = editTextCustomerPhone.text.toString()
+        val customerAddress = editTextCustomerAddress.text.toString()
 
+        val subtotal = salesItems.sumOf { it.quantity * it.price }
+        val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
+        val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
+        val totalAmount = subtotal - discount + deliveryFee
+
+        val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
+        val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString()
+
+        val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+        val currentDate = sdf.format(Date())
+
+        val saleRecord = SaleRecord(
+            customerName = customerName,
+            customerPhone = customerPhone,
+            customerAddress = customerAddress,
+            items = salesItems.toList(),
+            subtotal = subtotal,
+            discount = discount,
+            deliveryFee = deliveryFee,
+            totalAmount = totalAmount,
+            paymentType = paymentType,
+            saleDate = currentDate
+        )
+
+        SalesRepository.addSaleRecord(saleRecord)
+
+        // --- Toast message အစား VoucherActivity ကို ဖွင့်ပါ ---
+        val intent = Intent(requireContext(), VoucherActivity::class.java)
+        intent.putExtra("EXTRA_SALE_RECORD", saleRecord)
+        startActivity(intent)
+
+        clearSale()
+    }
+
+    private fun clearSale() {
+        val itemCount = salesItems.size
+        if (itemCount > 0) {
+            salesItems.clear()
+            salesAdapter.notifyItemRangeRemoved(0, itemCount)
+        }
+        editTextCustomerName.text.clear()
+        editTextCustomerPhone.text.clear()
+        editTextCustomerAddress.text.clear()
+        editTextDiscount.text.clear()
+        editTextDeliveryFee.text.clear()
+        radioGroupPayment.check(R.id.radioButtonPaid)
         updateSummary()
     }
 
-    // Manual data ထည့်တဲ့ dialog အစား Inventory က ပစ္စည်းတွေ ရွေးနိုင်တဲ့ dialog အသစ်
+    // --- ကျန်တဲ့ function တွေက အရင်အတိုင်းပါပဲ ---
     private fun showProductSelectionDialog() {
         val inventory = InventoryRepository.getInventoryItems()
         if (inventory.isEmpty()) {
@@ -75,22 +188,19 @@ class SalesFragment : Fragment(), SalesItemListener {
             return
         }
 
-        val itemNames = inventory.map { it.name }.toTypedArray()
+        val itemNames = inventory.map { "${it.name} (လက်ကျန်: ${it.stockQuantity})" }.toTypedArray()
 
         AlertDialog.Builder(requireContext())
             .setTitle("ပစ္စည်း ရွေးချယ်ပါ")
             .setItems(itemNames) { dialog, which ->
                 val selectedItem = inventory[which]
 
-                // Cart ထဲမှာ ဒီပစ္စည်း ရှိပြီးသားလား စစ်ဆေးပါ
-                val existingItem = salesItems.find { it.name == selectedItem.name }
+                val existingItemInCart = salesItems.find { it.name == selectedItem.name }
 
-                if (existingItem != null) {
-                    // ရှိပြီးသားဆို အရေအတွက်ပဲ တိုးပါ
-                    val index = salesItems.indexOf(existingItem)
+                if (existingItemInCart != null) {
+                    val index = salesItems.indexOf(existingItemInCart)
                     onIncreaseQuantity(index)
                 } else {
-                    // မရှိသေးရင် အသစ်ထည့်ပါ
                     val newItem = SaleItem(name = selectedItem.name, quantity = 1, price = selectedItem.price)
                     salesItems.add(newItem)
                     salesAdapter.notifyItemInserted(salesItems.size - 1)
@@ -102,53 +212,6 @@ class SalesFragment : Fragment(), SalesItemListener {
             .create()
             .show()
     }
-
-    private fun updateSummary() {
-        var subtotal = 0.0
-        salesItems.forEach { subtotal += it.quantity * it.price }
-
-        val grandTotal = subtotal
-        val numberFormat = NumberFormat.getNumberInstance(Locale.US)
-
-        textViewSubtotal.text = "စုစုပေါင်း: ${numberFormat.format(subtotal.toInt())} Ks"
-        textViewGrandTotal.text = "ကျသင့်ငွေ: ${numberFormat.format(grandTotal.toInt())} Ks"
-    }
-
-    private fun clearSale() {
-        val itemCount = salesItems.size
-        salesItems.clear()
-        salesAdapter.notifyItemRangeRemoved(0, itemCount)
-        editTextCustomerName.text.clear()
-        editTextCustomerPhone.text.clear()
-        updateSummary()
-        Toast.makeText(requireContext(), "စာရင်းကို ရှင်းလင်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun confirmSale() {
-        if (salesItems.isEmpty()) {
-            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val totalAmountText = textViewGrandTotal.text.toString()
-        val totalItems = salesItems.size
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("အရောင်း အတည်ပြုချက်")
-            .setMessage("စုစုပေါင်း ပစ္စည်း ${totalItems} မျိုး၊ $totalAmountText ဖြင့် ရောင်းချမှာ သေချာလား?")
-            .setPositiveButton("အတည်ပြုမည်") { dialog, _ ->
-                Toast.makeText(requireContext(), "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
-                clearSale()
-                dialog.dismiss()
-            }
-            .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
-                dialog.cancel()
-            }
-            .create()
-            .show()
-    }
-
-    // --- Interface Functions ---
 
     override fun onDeleteItem(position: Int) {
         salesItems.removeAt(position)
@@ -162,6 +225,8 @@ class SalesFragment : Fragment(), SalesItemListener {
         salesAdapter.notifyItemChanged(position)
         updateSummary()
     }
+
+
 
     override fun onDecreaseQuantity(position: Int) {
         val item = salesItems[position]
