@@ -5,13 +5,11 @@ plugins {
 
 android {
     namespace = "com.shop.pos"
-    // ဒီနေရာက version ကို 34 မှ 36 သို့ ပြောင်းလဲလိုက်ပါသည်
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.shop.pos"
         minSdk = 24
-        // ဒီနေရာက version ကိုလည်း 34 မှ 36 သို့ ပြောင်းလဲလိုက်ပါသည်
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -43,7 +41,10 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation(libs.androidx.activity)
+
+    // RecyclerView Library ကို အသစ်ထည့်သွင်းလိုက်ပါသည်
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
