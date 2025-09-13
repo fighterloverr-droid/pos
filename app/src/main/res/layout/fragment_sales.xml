@@ -89,6 +89,7 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/textViewSubtotal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="end"
@@ -96,6 +97,7 @@
                     tools:text="စုစုပေါင်း: 3,000 Ks" />
 
                 <TextView
+                    android:id="@+id/textViewGrandTotal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="end"

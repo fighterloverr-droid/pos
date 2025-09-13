@@ -44,6 +44,7 @@ dependencies {
 
     // RecyclerView Library ကို အသစ်ထည့်သွင်းလိုက်ပါသည်
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation(libs.androidx.activity)
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

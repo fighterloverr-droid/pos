@@ -12,4 +12,12 @@
         android:id="@+id/navigation_inventory"
         android:icon="@drawable/ic_inventory"
         android:title="Inventory" />
+    <item
+        android:id="@+id/navigation_purchases"
+        android:icon="@drawable/ic_purchases"
+        android:title="Purchases" />
+    <item
+        android:id="@+id/navigation_expenses"
+        android:icon="@drawable/ic_expenses"
+        android:title="Expenses" />
 </menu>

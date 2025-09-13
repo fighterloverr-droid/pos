@@ -5,14 +5,105 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class InventoryFragment : Fragment() {
+class InventoryFragment : Fragment(), InventoryItemListener {
+
+    private lateinit var inventoryRecyclerView: RecyclerView
+    private lateinit var inventoryAdapter: InventoryAdapter
+    private lateinit var fabAddItem: FloatingActionButton
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_inventory, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        inventoryRecyclerView = view.findViewById(R.id.recyclerViewInventory)
+        fabAddItem = view.findViewById(R.id.fabAddItem)
+
+        inventoryAdapter = InventoryAdapter(InventoryRepository.getInventoryItems(), this)
+
+        inventoryRecyclerView.adapter = inventoryAdapter
+        inventoryRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+
+        fabAddItem.setOnClickListener {
+            showAddItemDialog()
+        }
+    }
+
+    private fun showAddItemDialog(position: Int = -1) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
+        val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
+        val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
+        val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
+        editTextQuantity.hint = "လက်ကျန် အရေအတွက်"
+
+        val isEditing = position != -1
+        val dialogTitle = if(isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
+
+        if (isEditing) {
+            val item = InventoryRepository.getInventoryItems()[position]
+            editTextItemName.setText(item.name)
+            editTextQuantity.setText(item.stockQuantity.toString())
+            editTextPrice.setText(item.price.toString())
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(dialogTitle)
+            .setView(dialogView)
+            .setPositiveButton("သိမ်းမည်") { dialog, _ ->
+                val name = editTextItemName.text.toString()
+                val quantityStr = editTextQuantity.text.toString()
+                val priceStr = editTextPrice.text.toString()
+
+                if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty()) {
+                    val item = InventoryItem(name, quantityStr.toInt(), priceStr.toDouble())
+                    if(isEditing) {
+                        InventoryRepository.updateInventoryItem(position, item)
+                        inventoryAdapter.notifyItemChanged(position)
+                    } else {
+                        InventoryRepository.addInventoryItem(item)
+                        inventoryAdapter.notifyItemInserted(InventoryRepository.getInventoryItems().size - 1)
+                    }
+                    dialog.dismiss()
+                } else {
+                    Toast.makeText(requireContext(), "အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
+                dialog.cancel()
+            }
+            .create()
+            .show()
+    }
+
+    override fun onEditItem(position: Int) {
+        showAddItemDialog(position)
+    }
+
+    override fun onDeleteItem(position: Int) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("ပစ္စည်း ဖျက်ရန်")
+            .setMessage("ဒီပစ္စည်းကို စာရင်းထဲက ဖျက်မှာ သေချာလား?")
+            .setPositiveButton("ဖျက်မည်") { dialog, _ ->
+                InventoryRepository.deleteInventoryItem(position)
+                inventoryAdapter.notifyItemRemoved(position)
+                dialog.dismiss()
+            }
+            .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
+                dialog.cancel()
+            }
+            .create()
+            .show()
     }
 }

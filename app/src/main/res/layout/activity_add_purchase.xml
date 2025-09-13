@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".AddPurchaseActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="အဝယ်စာရင်းသစ်ထည့်ရန်"
+            app:navigationIcon="@drawable/ic_arrow_back" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/editTextSupplierName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Supplier အမည်"
+                android:inputType="textPersonName" />
+
+            <TextView
+                android:id="@+id/textViewPurchaseDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="ဝယ်ယူသည့်ရက်စွဲ"
+                android:padding="12dp"
+                android:textSize="18sp"
+                android:background="?attr/editTextBackground" />
+
+            <EditText
+                android:id="@+id/editTextTotalAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="စုစုပေါင်း တန်ဖိုး (Ks)"
+                android:inputType="numberDecimal" />
+
+            <EditText
+                android:id="@+id/editTextNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="မှတ်ချက် (optional)"
+                android:inputType="textMultiLine"
+                android:minLines="3"
+                android:gravity="top"/>
+
+            <Button
+                android:id="@+id/buttonSavePurchase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="သိမ်းဆည်းမည်" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>
