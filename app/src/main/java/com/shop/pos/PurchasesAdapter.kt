@@ -5,20 +5,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
-
-interface PurchaseWorkflowListener {
+// Interface နာမည်ကို PurchaseItemListener လို့ ပြန်ပြောင်းပါ
+interface PurchaseItemListener {
     fun onMarkAsArrived(position: Int)
+    fun onEditItem(position: Int)
+    fun onDeleteItem(position: Int)
 }
 
 class PurchasesAdapter(
     private val items: List<PurchaseItem>,
-    private val listener: PurchaseWorkflowListener
+    private val listener: PurchaseItemListener // <- Listener type ကိုပါ ပြောင်းပါ
 ) : RecyclerView.Adapter<PurchasesAdapter.PurchaseViewHolder>() {
 
     inner class PurchaseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -27,10 +28,19 @@ class PurchasesAdapter(
         val totalAmount: TextView = itemView.findViewById(R.id.textViewTotalAmount)
         val status: TextView = itemView.findViewById(R.id.textViewStatus)
         val markAsArrivedButton: Button = itemView.findViewById(R.id.buttonMarkAsArrived)
+        val editButton: Button = itemView.findViewById(R.id.buttonEdit)
+        val deleteButton: Button = itemView.findViewById(R.id.buttonDelete)
+
 
         init {
             markAsArrivedButton.setOnClickListener {
                 listener.onMarkAsArrived(adapterPosition)
+            }
+            editButton.setOnClickListener {
+                listener.onEditItem(adapterPosition)
+            }
+            deleteButton.setOnClickListener {
+                listener.onDeleteItem(adapterPosition)
             }
         }
     }

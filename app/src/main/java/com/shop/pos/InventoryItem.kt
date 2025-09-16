@@ -1,14 +1,18 @@
 package com.shop.pos
 
-// Parcelable import တွေကို ထည့်ဖို့ မမေ့ပါနဲ့
 import android.os.Parcelable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
+@Entity(tableName = "inventory_items") // <-- Entity အဖြစ် သတ်မှတ်ပါ
 data class InventoryItem(
+    @PrimaryKey(autoGenerate = true) // <-- Primary Key (ID) အဖြစ် သတ်မှတ်ပါ
+    val id: Int = 0,
     val name: String,
     val stockQuantity: Int,
-    val price: Double, // ရောင်းဈေး (Selling Price)
-    val costPrice: Double, // အရင်းဈေး (Cost Price)
-    val soldQuantity: Int = 0 // ရောင်းပြီးအရေအတွက် (default 0)
+    val price: Double,
+    val costPrice: Double,
+    val soldQuantity: Int = 0
 ) : Parcelable
