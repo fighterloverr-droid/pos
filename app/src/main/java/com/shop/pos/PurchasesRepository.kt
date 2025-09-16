@@ -14,5 +14,8 @@ class PurchasesRepository(private val purchaseDao: PurchaseDao) {
         purchaseDao.update(item)
     }
 
-    // ... delete function can be added later if needed
+    // Function အသစ်: စုစုပေါင်းအဝယ်တန်ဖိုးကို တွက်ချက်ရန်
+    suspend fun getTotalPurchases(): Double? {
+        return purchaseDao.getTotalPurchases()
+    }
 }

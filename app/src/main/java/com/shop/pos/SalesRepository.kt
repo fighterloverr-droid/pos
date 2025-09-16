@@ -1,18 +1,17 @@
 package com.shop.pos
 
-object SalesRepository {
-    private val saleRecords = mutableListOf<SaleRecord>()
+// object အစား class အဖြစ်ပြောင်းပြီး dao ကို လက်ခံပါ
+class SalesRepository(private val salesDao: SalesDao) {
 
-    fun addSaleRecord(record: SaleRecord) {
-        saleRecords.add(0, record)
+    suspend fun addSaleRecord(record: SaleRecord) {
+        salesDao.insert(record)
     }
 
-    fun getSaleRecords(): List<SaleRecord> {
-        return saleRecords
+    suspend fun getSaleRecords(): List<SaleRecord> {
+        return salesDao.getAllSales()
     }
 
-    // စုစုပေါင်း ရောင်းရငွေကို တွက်ချက်ရန်
-    fun getTotalSales(): Double {
-        return saleRecords.sumOf { it.totalAmount }
+    suspend fun getTotalSales(): Double? {
+        return salesDao.getTotalSales()
     }
 }

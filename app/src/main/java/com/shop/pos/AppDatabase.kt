@@ -6,12 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [InventoryItem::class, PurchaseItem::class], version = 1, exportSchema = false) // PurchaseItem ကိုထည့်ပါ
-@TypeConverters(Converters::class) // Converters ကိုထည့်ပါ
+@Database(entities = [InventoryItem::class, PurchaseItem::class, SaleRecord::class, ExpenseItem::class], version = 1, exportSchema = false)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun inventoryDao(): InventoryDao
-    abstract fun purchaseDao(): PurchaseDao // PurchaseDao ကိုထည့်ပါ
+    abstract fun purchaseDao(): PurchaseDao
+    abstract fun salesDao(): SalesDao
+    abstract fun expensesDao(): ExpensesDao
 
     companion object {
         @Volatile
@@ -23,7 +25,11 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "pos_database"
-                ).build()
+                )
+                    // In a real app, you'd need a proper migration strategy.
+                    // For this tutorial, we just rebuild the database if the schema changes.
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

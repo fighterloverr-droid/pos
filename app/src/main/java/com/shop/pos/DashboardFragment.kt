@@ -21,7 +21,8 @@ class DashboardFragment : Fragment() {
     // Repository တွေကို ကြေညာပါ
     private lateinit var inventoryRepository: InventoryRepository
     private lateinit var purchasesRepository: PurchasesRepository
-    // SalesRepository နှင့် ExpensesRepository တို့ကိုလည်း ကြေညာရန်လိုအပ်ပါသည်
+    private lateinit var salesRepository: SalesRepository
+    private lateinit var expensesRepository: ExpensesRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -38,10 +39,10 @@ class DashboardFragment : Fragment() {
 
         // --- DAO နှင့် Repository တွေကို ရယူပါ ---
         val app = requireActivity().application as PosApplication
-        val inventoryDao = app.database.inventoryDao()
-        inventoryRepository = InventoryRepository(inventoryDao)
-        val purchaseDao = app.database.purchaseDao()
-        purchasesRepository = PurchasesRepository(purchaseDao)
+        inventoryRepository = InventoryRepository(app.database.inventoryDao())
+        purchasesRepository = PurchasesRepository(app.database.purchaseDao())
+        salesRepository = SalesRepository(app.database.salesDao())
+        expensesRepository = ExpensesRepository(app.database.expensesDao())
         // ----------------------------------------
 
         val buttonViewSalesHistory = view.findViewById<Button>(R.id.buttonViewSalesHistory)
@@ -61,9 +62,9 @@ class DashboardFragment : Fragment() {
             val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
             // Repository instance ကနေ function တွေကို ခေါ်ပါ
-            val totalSales = SalesRepository.getTotalSales() // SalesRepository ကို database 화 လုပ်ရန် ကျန်သေးသည်
-            val totalExpenses = ExpensesRepository.getTotalExpenses() // ExpensesRepository ကို database 화 လုပ်ရန် ကျန်သေးသည်
-            val totalPurchases = purchasesRepository.getTotalPurchases() // instance ကနေခေါ်ပါ
+            val totalSales = salesRepository.getTotalSales() ?: 0.0
+            val totalExpenses = expensesRepository.getTotalExpenses() ?: 0.0
+            val totalPurchases = purchasesRepository.getTotalPurchases() ?: 0.0
             val totalInventoryValue = inventoryRepository.getTotalInventoryValue()
 
             val grossProfit = totalSales
