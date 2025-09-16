@@ -31,6 +31,7 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
         purchasesRecyclerView = view.findViewById(R.id.recyclerViewPurchases)
         fabAddPurchase = view.findViewById(R.id.fabAddPurchase)
 
+        // Adapter ကို တည်ဆောက်တဲ့အခါ `this` ကို listener အဖြစ် ထည့်ပေးပါ
         purchasesAdapter = PurchasesAdapter(PurchasesRepository.getPurchaseItems(), this)
         purchasesRecyclerView.adapter = purchasesAdapter
         purchasesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -45,6 +46,8 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
         super.onResume()
         purchasesAdapter.notifyDataSetChanged()
     }
+
+    // --- Interface function တွေကို ဒီမှာ အကောင်အထည်ဖော်ပါ ---
 
     override fun onMarkAsArrived(position: Int) {
         val purchaseItem = PurchasesRepository.markAsArrived(position)
