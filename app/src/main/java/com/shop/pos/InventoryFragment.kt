@@ -8,15 +8,20 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.launch
 
 class InventoryFragment : Fragment(), InventoryItemListener {
 
     private lateinit var inventoryRecyclerView: RecyclerView
     private lateinit var inventoryAdapter: InventoryAdapter
     private lateinit var fabAddItem: FloatingActionButton
+    private lateinit var inventoryRepository: InventoryRepository
+
+    private var inventoryItems = mutableListOf<InventoryItem>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,11 +33,13 @@ class InventoryFragment : Fragment(), InventoryItemListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val dao = (requireActivity().application as PosApplication).database.inventoryDao()
+        inventoryRepository = InventoryRepository(dao)
+
         inventoryRecyclerView = view.findViewById(R.id.recyclerViewInventory)
         fabAddItem = view.findViewById(R.id.fabAddItem)
 
-        inventoryAdapter = InventoryAdapter(InventoryRepository.getInventoryItems(), this)
-
+        inventoryAdapter = InventoryAdapter(inventoryItems, this)
         inventoryRecyclerView.adapter = inventoryAdapter
         inventoryRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
@@ -43,7 +50,16 @@ class InventoryFragment : Fragment(), InventoryItemListener {
 
     override fun onResume() {
         super.onResume()
-        inventoryAdapter.notifyDataSetChanged()
+        loadInventoryItems()
+    }
+
+    private fun loadInventoryItems() {
+        lifecycleScope.launch {
+            val itemsFromDb = inventoryRepository.getInventoryItems()
+            inventoryItems.clear()
+            inventoryItems.addAll(itemsFromDb)
+            inventoryAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun showAddItemDialog(position: Int = -1) {
@@ -51,18 +67,16 @@ class InventoryFragment : Fragment(), InventoryItemListener {
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
-        // EditText အသစ်ကို ချိတ်ဆက်ပါ
         val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
 
         val isEditing = position != -1
         val dialogTitle = if(isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
 
         if (isEditing) {
-            val item = InventoryRepository.getInventoryItems()[position]
+            val item = inventoryItems[position]
             editTextItemName.setText(item.name)
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
-            // data အဟောင်းကို EditText အသစ်မှာ ဖြည့်ပါ
             editTextCostPrice.setText(item.costPrice.toString())
         }
 
@@ -73,27 +87,32 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                 val name = editTextItemName.text.toString()
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
-                // EditText အသစ်က data ကို ရယူပါ
                 val costPriceStr = editTextCostPrice.text.toString()
 
                 if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
                     val price = priceStr.toDouble()
                     val costPrice = costPriceStr.toDouble()
 
-                    val item = InventoryItem(
-                        name = name,
-                        stockQuantity = quantityStr.toInt(),
-                        price = price,
-                        costPrice = costPrice
-                    )
-                    if(isEditing) {
-                        val oldItem = InventoryRepository.getInventoryItems()[position]
-                        val updatedItemWithSoldCount = item.copy(soldQuantity = oldItem.soldQuantity)
-                        InventoryRepository.updateInventoryItem(position, updatedItemWithSoldCount)
-                        inventoryAdapter.notifyItemChanged(position)
-                    } else {
-                        InventoryRepository.addInventoryItem(item)
-                        inventoryAdapter.notifyItemInserted(InventoryRepository.getInventoryItems().size - 1)
+                    lifecycleScope.launch {
+                        if(isEditing) {
+                            val oldItem = inventoryItems[position]
+                            val updatedItem = oldItem.copy(
+                                name = name,
+                                stockQuantity = quantityStr.toInt(),
+                                price = price,
+                                costPrice = costPrice
+                            )
+                            inventoryRepository.updateInventoryItem(updatedItem)
+                        } else {
+                            val newItem = InventoryItem(
+                                name = name,
+                                stockQuantity = quantityStr.toInt(),
+                                price = price,
+                                costPrice = costPrice
+                            )
+                            inventoryRepository.addInventoryItem(newItem)
+                        }
+                        loadInventoryItems()
                     }
                     dialog.dismiss()
                 } else {
@@ -116,8 +135,11 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             .setTitle("ပစ္စည်း ဖျက်ရန်")
             .setMessage("ဒီပစ္စည်းကို စာရင်းထဲက ဖျက်မှာ သေချာလား?")
             .setPositiveButton("ဖျက်မည်") { dialog, _ ->
-                InventoryRepository.deleteInventoryItem(position)
-                inventoryAdapter.notifyItemRemoved(position)
+                lifecycleScope.launch {
+                    val itemToDelete = inventoryItems[position]
+                    inventoryRepository.deleteInventoryItem(itemToDelete)
+                    loadInventoryItems()
+                }
                 dialog.dismiss()
             }
             .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->

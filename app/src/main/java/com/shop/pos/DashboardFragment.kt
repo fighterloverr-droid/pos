@@ -10,12 +10,18 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.IdRes
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 class DashboardFragment : Fragment() {
 
     private var fragmentView: View? = null
+    // Repository တွေကို ကြေညာပါ
+    private lateinit var inventoryRepository: InventoryRepository
+    private lateinit var purchasesRepository: PurchasesRepository
+    // SalesRepository နှင့် ExpensesRepository တို့ကိုလည်း ကြေညာရန်လိုအပ်ပါသည်
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,6 +36,14 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // --- DAO နှင့် Repository တွေကို ရယူပါ ---
+        val app = requireActivity().application as PosApplication
+        val inventoryDao = app.database.inventoryDao()
+        inventoryRepository = InventoryRepository(inventoryDao)
+        val purchaseDao = app.database.purchaseDao()
+        purchasesRepository = PurchasesRepository(purchaseDao)
+        // ----------------------------------------
+
         val buttonViewSalesHistory = view.findViewById<Button>(R.id.buttonViewSalesHistory)
         buttonViewSalesHistory.setOnClickListener {
             val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
@@ -43,43 +57,45 @@ class DashboardFragment : Fragment() {
     }
 
     private fun updateDashboardCards() {
-        val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+        lifecycleScope.launch {
+            val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
-        val totalSales = SalesRepository.getTotalSales()
-        val totalExpenses = ExpensesRepository.getTotalExpenses()
-        // အမှားပြင်ဆင်ပြီး: function နာမည်အမှန် 'getTotalPurchases' ကို အသုံးပြုပါ
-        val totalPurchases = PurchasesRepository.getTotalPurchases()
-        val totalInventoryValue = InventoryRepository.getTotalInventoryValue()
+            // Repository instance ကနေ function တွေကို ခေါ်ပါ
+            val totalSales = SalesRepository.getTotalSales() // SalesRepository ကို database 화 လုပ်ရန် ကျန်သေးသည်
+            val totalExpenses = ExpensesRepository.getTotalExpenses() // ExpensesRepository ကို database 화 လုပ်ရန် ကျန်သေးသည်
+            val totalPurchases = purchasesRepository.getTotalPurchases() // instance ကနေခေါ်ပါ
+            val totalInventoryValue = inventoryRepository.getTotalInventoryValue()
 
-        val grossProfit = totalSales
-        val netProfit = grossProfit - totalExpenses
-        val operatingCash = totalSales - totalPurchases - totalExpenses
+            val grossProfit = totalSales
+            val netProfit = grossProfit - totalExpenses
+            val operatingCash = totalSales - totalPurchases - totalExpenses
 
-        setupMetricCard(
-            cardId = R.id.cardOperatingCash,
-            title = "လုပ်ငန်းလည်ပတ်ငွေ",
-            value = "${numberFormat.format(operatingCash.toInt())} Ks",
-            isNegative = operatingCash < 0
-        )
+            setupMetricCard(
+                cardId = R.id.cardOperatingCash,
+                title = "လုပ်ငန်းလည်ပတ်ငွေ",
+                value = "${numberFormat.format(operatingCash.toInt())} Ks",
+                isNegative = operatingCash < 0
+            )
 
-        setupMetricCard(
-            cardId = R.id.cardInventoryValue,
-            title = "လက်ကျန်ပစ္စည်းတန်ဖိုး",
-            value = "${numberFormat.format(totalInventoryValue.toInt())} Ks"
-        )
+            setupMetricCard(
+                cardId = R.id.cardInventoryValue,
+                title = "လက်ကျန်ပစ္စည်းတန်ဖိုး",
+                value = "${numberFormat.format(totalInventoryValue.toInt())} Ks"
+            )
 
-        setupMetricCard(
-            cardId = R.id.cardNetProfit,
-            title = "အသားတင်အမြတ်ငွေ",
-            value = "${numberFormat.format(netProfit.toInt())} Ks",
-            isNegative = netProfit < 0
-        )
+            setupMetricCard(
+                cardId = R.id.cardNetProfit,
+                title = "အသားတင်အမြတ်ငွေ",
+                value = "${numberFormat.format(netProfit.toInt())} Ks",
+                isNegative = netProfit < 0
+            )
 
-        setupMetricCard(
-            cardId = R.id.cardGrossProfit,
-            title = "အမြတ်ငွေ (စုစုပေါင်း ရောင်းရငွေ)",
-            value = "${numberFormat.format(grossProfit.toInt())} Ks"
-        )
+            setupMetricCard(
+                cardId = R.id.cardGrossProfit,
+                title = "အမြတ်ငွေ (စုစုပေါင်း ရောင်းရငွေ)",
+                value = "${numberFormat.format(grossProfit.toInt())} Ks"
+            )
+        }
     }
 
     private fun setupMetricCard(@IdRes cardId: Int, title: String, value: String, isNegative: Boolean = false) {

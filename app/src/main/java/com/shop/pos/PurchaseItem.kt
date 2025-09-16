@@ -1,15 +1,19 @@
 package com.shop.pos
 
-// Parcelable import တွေကို ထည့်ဖို့ မမေ့ပါနဲ့
 import android.os.Parcelable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
 @Parcelize
+@Entity(tableName = "purchase_records") // <-- Entity အဖြစ် သတ်မှတ်ပါ
 data class PurchaseItem(
+    @PrimaryKey(autoGenerate = true) // <-- Primary Key (ID) အဖြစ် သတ်မှတ်ပါ
+    val id: Int = 0,
     val supplierName: String,
     val purchaseDate: String,
-    val items: @RawValue List<PurchaseDetailItem>, // Parcelable List အတွက် @RawValue ထည့်ပါ
+    val items: @RawValue List<PurchaseDetailItem>,
     val totalAmount: Double,
-    var hasArrived: Boolean = false // <-- Field အသစ် (var အဖြစ် ကြေညာရန် အရေးကြီးသည်)
+    var hasArrived: Boolean = false
 ) : Parcelable

@@ -1,39 +1,35 @@
 package com.shop.pos
 
-object InventoryRepository {
-    private val inventoryItems = mutableListOf<InventoryItem>()
+// Repository ကို class အဖြစ်ပြောင်းပြီး DAO ကို constructor ကနေ လက်ခံပါ
+class InventoryRepository(private val inventoryDao: InventoryDao) {
 
-    fun getInventoryItems(): List<InventoryItem> {
-        return inventoryItems
+    suspend fun getInventoryItems(): List<InventoryItem> {
+        return inventoryDao.getAllItems()
     }
 
-    fun addInventoryItem(item: InventoryItem) {
-        inventoryItems.add(item)
+    suspend fun addInventoryItem(item: InventoryItem) {
+        inventoryDao.insert(item)
     }
 
-    fun updateInventoryItem(position: Int, updatedItem: InventoryItem) {
-        if (position >= 0 && position < inventoryItems.size) {
-            inventoryItems[position] = updatedItem
-        }
+    suspend fun updateInventoryItem(item: InventoryItem) {
+        inventoryDao.update(item)
     }
 
-    fun deleteInventoryItem(position: Int) {
-        if (position >= 0 && position < inventoryItems.size) {
-            inventoryItems.removeAt(position)
-        }
+    suspend fun deleteInventoryItem(item: InventoryItem) {
+        inventoryDao.delete(item)
     }
 
-    fun addStockFromPurchase(purchaseDetailItems: List<PurchaseDetailItem>) {
+    suspend fun addStockFromPurchase(purchaseDetailItems: List<PurchaseDetailItem>) {
         purchaseDetailItems.forEach { purchasedItem ->
-            val existingItem = inventoryItems.find { it.name.equals(purchasedItem.name, ignoreCase = true) }
+            val existingItem = inventoryDao.findItemByName(purchasedItem.name)
 
             if (existingItem != null) {
-                val index = inventoryItems.indexOf(existingItem)
                 val updatedQuantity = existingItem.stockQuantity + purchasedItem.quantity
-                inventoryItems[index] = existingItem.copy(
+                val updatedItem = existingItem.copy(
                     stockQuantity = updatedQuantity,
                     costPrice = purchasedItem.purchasePrice
                 )
+                inventoryDao.update(updatedItem)
             } else {
                 val newItem = InventoryItem(
                     name = purchasedItem.name,
@@ -41,38 +37,35 @@ object InventoryRepository {
                     price = purchasedItem.purchasePrice,
                     costPrice = purchasedItem.purchasePrice
                 )
-                inventoryItems.add(newItem)
+                inventoryDao.insert(newItem)
             }
         }
     }
 
-    fun deductStockFromSale(saleItems: List<SaleItem>): Boolean {
+    suspend fun deductStockFromSale(saleItems: List<SaleItem>): Boolean {
         for (saleItem in saleItems) {
-            val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }
+            val inventoryItem = inventoryDao.findItemByName(saleItem.name)
             if (inventoryItem == null || inventoryItem.stockQuantity < saleItem.quantity) {
                 return false
             }
         }
 
         for (saleItem in saleItems) {
-            val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }!!
-            val index = inventoryItems.indexOf(inventoryItem)
-
+            val inventoryItem = inventoryDao.findItemByName(saleItem.name)!!
             val updatedStock = inventoryItem.stockQuantity - saleItem.quantity
             val updatedSoldCount = inventoryItem.soldQuantity + saleItem.quantity
-
-            inventoryItems[index] = inventoryItem.copy(
+            val updatedItem = inventoryItem.copy(
                 stockQuantity = updatedStock,
                 soldQuantity = updatedSoldCount
             )
+            inventoryDao.update(updatedItem)
         }
-
         return true
     }
 
-    fun getTotalInventoryValue(): Double {
+    suspend fun getTotalInventoryValue(): Double {
         var totalValue = 0.0
-        inventoryItems.forEach { item ->
+        inventoryDao.getAllItems().forEach { item ->
             totalValue += item.stockQuantity * item.costPrice
         }
         return totalValue

@@ -3,15 +3,18 @@ package com.shop.pos
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -31,12 +34,20 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
     private lateinit var purchaseDetailAdapter: PurchaseDetailAdapter
     private val purchaseDetailItems = mutableListOf<PurchaseDetailItem>()
 
+    private lateinit var inventoryRepository: InventoryRepository
+    private lateinit var purchasesRepository: PurchasesRepository
+
     private val calendar = Calendar.getInstance()
-    private var editingPosition = -1 // This is for edit logic, not used yet
+    private var editingPurchaseId = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_purchase)
+
+        val inventoryDao = (application as PosApplication).database.inventoryDao()
+        inventoryRepository = InventoryRepository(inventoryDao)
+        val purchaseDao = (application as PosApplication).database.purchaseDao()
+        purchasesRepository = PurchasesRepository(purchaseDao)
 
         toolbar = findViewById(R.id.toolbar)
         editTextSupplierName = findViewById(R.id.editTextSupplierName)
@@ -47,16 +58,53 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         buttonSavePurchase = findViewById(R.id.buttonSavePurchase)
 
         toolbar.setNavigationOnClickListener { finish() }
-        toolbar.title = "အဝယ်စာရင်းသစ်ထည့်ရန်"
 
         setupRecyclerView()
 
-        updateDateInView()
+        editingPurchaseId = intent.getIntExtra("EDIT_PURCHASE_ID", -1)
+        if (editingPurchaseId != -1) {
+            toolbar.title = "အဝယ်မှတ်တမ်း ပြင်ဆင်ရန်"
+            // TODO: Load existing data for editing
+        } else {
+            toolbar.title = "အဝယ်စာရင်းသစ်ထည့်ရန်"
+            updateDateInView()
+        }
+
         updateTotalAmount()
 
         textViewPurchaseDate.setOnClickListener { showDatePickerDialog() }
         buttonAddItemToPurchase.setOnClickListener { showAddItemDialog() }
         buttonSavePurchase.setOnClickListener { savePurchase() }
+    }
+
+    private fun savePurchase() {
+        val supplierName = editTextSupplierName.text.toString()
+        val purchaseDate = textViewPurchaseDate.text.toString()
+
+        if (supplierName.isEmpty() || purchaseDetailItems.isEmpty()) {
+            Toast.makeText(this, "Supplier အမည်နှင့် အနည်းဆုံး ပစ္စည်းတစ်မျိုး ထည့်ပါ", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val totalAmount = purchaseDetailItems.sumOf { it.quantity * it.purchasePrice }
+
+        val newPurchase = PurchaseItem(
+            supplierName = supplierName,
+            purchaseDate = purchaseDate,
+            items = purchaseDetailItems.toList(),
+            totalAmount = totalAmount,
+            hasArrived = false
+        )
+
+        lifecycleScope.launch {
+            purchasesRepository.addPurchaseItem(newPurchase)
+            inventoryRepository.addStockFromPurchase(purchaseDetailItems.toList())
+
+            runOnUiThread {
+                Toast.makeText(this@AddPurchaseActivity, "အဝယ်စာရင်းကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -69,8 +117,11 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null)
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
+        val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
-        editTextPrice.hint = "တစ်ခုချင်း ဝယ်ဈေး"
+
+        editTextCostPrice.hint = "တစ်ခုချင်း ဝယ်ဈေး"
+        editTextPrice.visibility = View.GONE
 
         AlertDialog.Builder(this)
             .setTitle("ဝယ်ယူသည့် ပစ္စည်းထည့်ရန်")
@@ -78,7 +129,7 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
             .setPositiveButton("ထည့်မည်") { dialog, _ ->
                 val name = editTextItemName.text.toString()
                 val quantityStr = editTextQuantity.text.toString()
-                val priceStr = editTextPrice.text.toString()
+                val priceStr = editTextCostPrice.text.toString()
 
                 if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty()) {
                     val newItem = PurchaseDetailItem(name, quantityStr.toInt(), priceStr.toDouble())
@@ -99,38 +150,6 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         val total = purchaseDetailItems.sumOf { it.quantity * it.purchasePrice }
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
         textViewTotalAmount.text = "Total: ${numberFormat.format(total.toInt())} Ks"
-    }
-
-    private fun savePurchase() {
-        val supplierName = editTextSupplierName.text.toString()
-        val purchaseDate = textViewPurchaseDate.text.toString()
-
-        if (supplierName.isEmpty()) {
-            Toast.makeText(this, "Supplier အမည် ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (purchaseDetailItems.isEmpty()) {
-            Toast.makeText(this, "အနည်းဆုံး ပစ္စည်းတစ်မျိုး ထည့်ပါ", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val totalAmount = purchaseDetailItems.sumOf { it.quantity * it.purchasePrice }
-
-        val newPurchase = PurchaseItem(
-            supplierName = supplierName,
-            purchaseDate = purchaseDate,
-            items = purchaseDetailItems.toList(),
-            totalAmount = totalAmount,
-            hasArrived = false // အမြဲတမ်း "မရောက်သေး" အခြေအနေနဲ့ သိမ်းဆည်းပါ
-        )
-
-        PurchasesRepository.addPurchaseItem(newPurchase)
-
-        // Inventory ကို update လုပ်တဲ့ စာကြောင်းကို ဒီနေရာကနေ ဖယ်ရှားလိုက်ပါပြီ
-        // InventoryRepository.addStockFromPurchase(purchaseDetailItems.toList())
-
-        Toast.makeText(this, "အဝယ်စာရင်းကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
-        finish()
     }
 
     override fun onDeleteItem(position: Int) {
