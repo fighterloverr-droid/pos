@@ -1,27 +1,33 @@
 package com.shop.pos
 
-import android.app.DatePickerDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
-import android.view.MenuItem
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import kotlinx.coroutines.launch
 
 class SalesHistoryActivity : AppCompatActivity() {
 
     private lateinit var salesHistoryRecyclerView: RecyclerView
     private lateinit var salesHistoryAdapter: SalesHistoryAdapter
     private lateinit var toolbar: MaterialToolbar
+    // Repository ကို ကြေညာပါ
+    private lateinit var salesRepository: SalesRepository
+
+    // Data list ကို class level မှာ ကြေညာပါ
+    private var salesRecords = mutableListOf<SaleRecord>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sales_history)
+
+        // Repository ကို ရယူပါ
+        val dao = (application as PosApplication).database.salesDao()
+        salesRepository = SalesRepository(dao)
 
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -32,12 +38,28 @@ class SalesHistoryActivity : AppCompatActivity() {
         setupRecyclerView()
     }
 
+    override fun onResume() {
+        super.onResume()
+        loadSalesHistory()
+    }
+
     private fun setupRecyclerView() {
         salesHistoryRecyclerView = findViewById(R.id.recyclerViewSalesHistory)
 
-        salesHistoryAdapter = SalesHistoryAdapter(SalesRepository.getSaleRecords())
+        // Adapter ကို data list အလွတ်နဲ့ အရင်တည်ဆောက်ပါ
+        salesHistoryAdapter = SalesHistoryAdapter(salesRecords)
         salesHistoryRecyclerView.adapter = salesHistoryAdapter
         salesHistoryRecyclerView.layoutManager = LinearLayoutManager(this)
+    }
+
+    // Data တွေကို database ကနေ background မှာ load လုပ်ပါ
+    private fun loadSalesHistory() {
+        lifecycleScope.launch {
+            val recordsFromDb = salesRepository.getSaleRecords()
+            salesRecords.clear()
+            salesRecords.addAll(recordsFromDb)
+            salesHistoryAdapter.notifyDataSetChanged()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -51,55 +73,22 @@ class SalesHistoryActivity : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                salesHistoryAdapter.filter.filter(newText)
+                // Adapter ရဲ့ filter ကို ခေါ်သုံးမယ့်အစား၊ local list ကို filter လုပ်ပါ
+                val filteredList = if (newText.isNullOrEmpty()) {
+                    salesRecords
+                } else {
+                    salesRecords.filter {
+                        it.customerName.contains(newText, true) ||
+                                it.saleDate.contains(newText, true)
+                    }
+                }
+                // Adapter ကို list အသစ်နဲ့ update လုပ်ပါ
+                salesHistoryAdapter.updateList(filteredList)
                 return true
             }
         })
         return super.onCreateOptionsMenu(menu)
     }
 
-    // Menu item (calendar icon) ကို နှိပ်လိုက်ရင် အလုပ်လုပ်မယ့် function အသစ်
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_filter_by_date -> {
-                showDatePickerDialogForFilter()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    // Filter လုပ်ရန် Date Picker Dialog ကို ပြသပေးမယ့် function အသစ်
-    private fun showDatePickerDialogForFilter() {
-        val calendar = Calendar.getInstance()
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-        val datePickerDialog = DatePickerDialog(
-            this,
-            { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                // User ရွေးလိုက်တဲ့ ရက်စွဲကို ပုံစံ format ချပါ
-                val selectedCalendar = Calendar.getInstance()
-                selectedCalendar.set(selectedYear, selectedMonth, selectedDayOfMonth)
-                val myFormat = "dd-MMM-yyyy"
-                val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
-                val selectedDateString = sdf.format(selectedCalendar.time)
-
-                // Adapter ရဲ့ filter ကို ထိုရက်စွဲနဲ့ ခေါ်သုံးပါ
-                salesHistoryAdapter.filter.filter(selectedDateString)
-            },
-            year,
-            month,
-            day
-        )
-
-        // "Filter ရှင်းရန်" button ထပ်ထည့်ပါ
-        datePickerDialog.setButton(DatePickerDialog.BUTTON_NEUTRAL, "Filter ရှင်းရန်") { _, _ ->
-            // Filter ကို ရှင်းလင်းရန် "" (empty string) နဲ့ filter ကို ခေါ်ပါ
-            salesHistoryAdapter.filter.filter("")
-        }
-
-        datePickerDialog.show()
-    }
+    // ...onOptionsItemSelected function is pending for next step
 }

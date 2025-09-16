@@ -41,7 +41,9 @@ class SalesFragment : Fragment(), SalesItemListener {
     private lateinit var buttonConfirmSale: Button
 
     private val salesItems = mutableListOf<SaleItem>()
+    // Repository တွေကို ကြေညာပါ
     private lateinit var inventoryRepository: InventoryRepository
+    private lateinit var salesRepository: SalesRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,8 +55,10 @@ class SalesFragment : Fragment(), SalesItemListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val dao = (requireActivity().application as PosApplication).database.inventoryDao()
-        inventoryRepository = InventoryRepository(dao)
+        // --- DAO နှင့် Repository တွေကို ရယူပါ ---
+        val app = requireActivity().application as PosApplication
+        inventoryRepository = InventoryRepository(app.database.inventoryDao())
+        salesRepository = SalesRepository(app.database.salesDao())
 
         bindViews(view)
 
@@ -65,6 +69,60 @@ class SalesFragment : Fragment(), SalesItemListener {
         setupListeners()
         updateSummary()
     }
+
+    private fun confirmSale() {
+        if (salesItems.isEmpty()) {
+            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            val isStockAvailable = inventoryRepository.deductStockFromSale(salesItems)
+            if (!isStockAvailable) {
+                Toast.makeText(requireContext(), "ပစ္စည်းလက်ကျန်မလုံလောက်ပါ!", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+
+            val customerName = editTextCustomerName.text.toString()
+            val customerPhone = editTextCustomerPhone.text.toString()
+            val customerAddress = editTextCustomerAddress.text.toString()
+
+            val subtotal = salesItems.sumOf { it.quantity * it.price }
+            val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
+            val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
+            val totalAmount = subtotal - discount + deliveryFee
+
+            val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
+            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString()
+
+            val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+            val currentDate = sdf.format(Date())
+
+            val saleRecord = SaleRecord(
+                customerName = customerName,
+                customerPhone = customerPhone,
+                customerAddress = customerAddress,
+                items = salesItems.toList(),
+                subtotal = subtotal,
+                discount = discount,
+                deliveryFee = deliveryFee,
+                totalAmount = totalAmount,
+                paymentType = paymentType,
+                saleDate = currentDate
+            )
+
+            // Repository instance ကနေ function ကို ခေါ်ပါ
+            salesRepository.addSaleRecord(saleRecord)
+
+            // UI thread မှာ Toast message ပြပြီး clear လုပ်ပါ
+            activity?.runOnUiThread {
+                Toast.makeText(requireContext(), "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
+                clearSale()
+            }
+        }
+    }
+
+    // --- ကျန်တဲ့ function တွေက အရင်အတိုင်းပါပဲ ---
 
     private fun bindViews(view: View) {
         salesRecyclerView = view.findViewById(R.id.recyclerViewSalesItems)
@@ -157,54 +215,6 @@ class SalesFragment : Fragment(), SalesItemListener {
                 }
                 .create()
                 .show()
-        }
-    }
-
-    private fun confirmSale() {
-        if (salesItems.isEmpty()) {
-            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            val isStockAvailable = inventoryRepository.deductStockFromSale(salesItems)
-            if (!isStockAvailable) {
-                Toast.makeText(requireContext(), "ပစ္စည်းလက်ကျန်မလုံလောက်ပါ!", Toast.LENGTH_LONG).show()
-                return@launch
-            }
-
-            val customerName = editTextCustomerName.text.toString()
-            val customerPhone = editTextCustomerPhone.text.toString()
-            val customerAddress = editTextCustomerAddress.text.toString()
-
-            val subtotal = salesItems.sumOf { it.quantity * it.price }
-            val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
-            val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
-            val totalAmount = subtotal - discount + deliveryFee
-
-            val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
-            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString()
-
-            val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
-            val currentDate = sdf.format(Date())
-
-            val saleRecord = SaleRecord(
-                customerName = customerName,
-                customerPhone = customerPhone,
-                customerAddress = customerAddress,
-                items = salesItems.toList(),
-                subtotal = subtotal,
-                discount = discount,
-                deliveryFee = deliveryFee,
-                totalAmount = totalAmount,
-                paymentType = paymentType,
-                saleDate = currentDate
-            )
-
-            SalesRepository.addSaleRecord(saleRecord)
-
-            Toast.makeText(requireContext(), "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
-            clearSale()
         }
     }
 

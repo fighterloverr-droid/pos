@@ -1,6 +1,5 @@
 package com.shop.pos
 
-// object အစား class အဖြစ်ပြောင်းပြီး dao ကို လက်ခံပါ
 class ExpensesRepository(private val expensesDao: ExpensesDao) {
 
     suspend fun getExpenseItems(): List<ExpenseItem> {
@@ -11,5 +10,19 @@ class ExpensesRepository(private val expensesDao: ExpensesDao) {
         expensesDao.insert(item)
     }
 
-    // TODO: Add Update and Delete functions later
+    suspend fun updateExpenseItem(item: ExpenseItem) {
+        expensesDao.update(item)
+    }
+
+    suspend fun deleteExpenseItem(item: ExpenseItem) {
+        expensesDao.delete(item)
+    }
+
+    suspend fun getExpenseById(id: Int): ExpenseItem? {
+        return expensesDao.getExpenseById(id)
+    }
+
+    suspend fun getTotalExpenses(): Double? {
+        return expensesDao.getTotalExpenses()
+    }
 }

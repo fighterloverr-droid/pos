@@ -7,7 +7,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -20,13 +22,17 @@ class AddExpenseActivity : AppCompatActivity() {
     private lateinit var editTextExpenseAmount: EditText
     private lateinit var buttonSaveExpense: Button
     private lateinit var toolbar: MaterialToolbar
+    private lateinit var expensesRepository: ExpensesRepository
 
     private val calendar = Calendar.getInstance()
-    private var editingPosition = -1
+    private var editingExpenseId = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_expense)
+
+        val dao = (application as PosApplication).database.expensesDao()
+        expensesRepository = ExpensesRepository(dao)
 
         toolbar = findViewById(R.id.toolbar)
         toolbar.setNavigationOnClickListener {
@@ -38,9 +44,9 @@ class AddExpenseActivity : AppCompatActivity() {
         editTextExpenseAmount = findViewById(R.id.editTextExpenseAmount)
         buttonSaveExpense = findViewById(R.id.buttonSaveExpense)
 
-        editingPosition = intent.getIntExtra("EDIT_EXPENSE_POSITION", -1)
+        editingExpenseId = intent.getIntExtra("EDIT_EXPENSE_ID", -1)
 
-        if (editingPosition != -1) {
+        if (editingExpenseId != -1) {
             toolbar.title = "ကုန်ကျစရိတ် ပြင်ဆင်ရန်"
             loadExpenseData()
         } else {
@@ -58,13 +64,17 @@ class AddExpenseActivity : AppCompatActivity() {
     }
 
     private fun loadExpenseData() {
-        val expenseItem = ExpensesRepository.getExpenseItems()[editingPosition]
-        editTextExpenseName.setText(expenseItem.name)
-        editTextExpenseAmount.setText(expenseItem.amount.toString())
-        textViewExpenseDate.text = expenseItem.date
+        lifecycleScope.launch {
+            val expenseItem = expensesRepository.getExpenseById(editingExpenseId)
+            if (expenseItem != null) {
+                editTextExpenseName.setText(expenseItem.name)
+                editTextExpenseAmount.setText(expenseItem.amount.toString())
+                textViewExpenseDate.text = expenseItem.date
 
-        val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
-        calendar.time = sdf.parse(expenseItem.date) ?: Date()
+                val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+                calendar.time = sdf.parse(expenseItem.date) ?: Date()
+            }
+        }
     }
 
     private fun showDatePickerDialog() {
@@ -96,19 +106,28 @@ class AddExpenseActivity : AppCompatActivity() {
             return
         }
 
-        val expense = ExpenseItem(
-            name = name,
-            date = date,
-            amount = amountStr.toDouble()
-        )
-
-        if (editingPosition != -1) {
-            ExpensesRepository.updateExpenseItem(editingPosition, expense)
-            Toast.makeText(this, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
-        } else {
-            ExpensesRepository.addExpenseItem(expense)
-            Toast.makeText(this, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            if (editingExpenseId != -1) {
+                // Edit Mode
+                val updatedExpense = ExpenseItem(
+                    id = editingExpenseId,
+                    name = name,
+                    date = date,
+                    amount = amountStr.toDouble()
+                )
+                expensesRepository.updateExpenseItem(updatedExpense)
+                Toast.makeText(this@AddExpenseActivity, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+            } else {
+                // Add Mode
+                val newExpense = ExpenseItem(
+                    name = name,
+                    date = date,
+                    amount = amountStr.toDouble()
+                )
+                expensesRepository.addExpenseItem(newExpense)
+                Toast.makeText(this@AddExpenseActivity, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+            }
+            finish()
         }
-        finish()
     }
 }
