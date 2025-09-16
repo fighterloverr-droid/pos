@@ -9,10 +9,10 @@ object InventoryRepository {
 
     private fun loadSampleData() {
         if (inventoryItems.isEmpty()) {
-            inventoryItems.add(InventoryItem("Coca-Cola", 50, 1000.0))
-            inventoryItems.add(InventoryItem("Potato Chips", 30, 1500.0))
-            inventoryItems.add(InventoryItem("Chocolate Bar", 100, 800.0))
-            inventoryItems.add(InventoryItem("Mineral Water", 80, 500.0))
+            inventoryItems.add(InventoryItem("Coca-Cola", 50, 1000.0, 700.0, 120))
+            inventoryItems.add(InventoryItem("Potato Chips", 30, 1500.0, 1100.0, 85))
+            inventoryItems.add(InventoryItem("Chocolate Bar", 100, 800.0, 550.0, 250))
+            inventoryItems.add(InventoryItem("Mineral Water", 80, 500.0, 300.0, 300))
         }
     }
 
@@ -42,20 +42,26 @@ object InventoryRepository {
 
             if (existingItem != null) {
                 val index = inventoryItems.indexOf(existingItem)
-                // အမှားပြင်ဆင်ပြီး : 'existing' အစား 'existingItem' ကို အသုံးပြုပါ
                 val updatedQuantity = existingItem.stockQuantity + purchasedItem.quantity
-                inventoryItems[index] = existingItem.copy(stockQuantity = updatedQuantity)
+                // ဝယ်ဈေးကိုလည်း နောက်ဆုံးဝယ်ဈေးနဲ့ update လုပ်နိုင် (optional)
+                inventoryItems[index] = existingItem.copy(
+                    stockQuantity = updatedQuantity,
+                    costPrice = purchasedItem.purchasePrice
+                )
             } else {
+                // ပစ္စည်းအသစ်ကို inventory ထဲ ထည့်တဲ့အခါ costPrice ပါ ထည့်ပေးပါ
                 val newItem = InventoryItem(
                     name = purchasedItem.name,
                     stockQuantity = purchasedItem.quantity,
-                    price = purchasedItem.purchasePrice
+                    price = purchasedItem.purchasePrice, // ရောင်းဈေးကို ဝယ်ဈေးအတိုင်း လောလောဆယ် သတ်မှတ်ပါ
+                    costPrice = purchasedItem.purchasePrice
                 )
                 inventoryItems.add(newItem)
             }
         }
     }
 
+    // deductStockFromSale function ကို အဆင့်မြှင့်တင်ပါ
     fun deductStockFromSale(saleItems: List<SaleItem>): Boolean {
         for (saleItem in saleItems) {
             val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }
@@ -67,8 +73,15 @@ object InventoryRepository {
         for (saleItem in saleItems) {
             val inventoryItem = inventoryItems.find { it.name.equals(saleItem.name, ignoreCase = true) }!!
             val index = inventoryItems.indexOf(inventoryItem)
-            val updatedQuantity = inventoryItem.stockQuantity - saleItem.quantity
-            inventoryItems[index] = inventoryItem.copy(stockQuantity = updatedQuantity)
+
+            // stock နုတ်တဲ့အပြင် soldQuantity ကိုပါ တိုးပေးပါ
+            val updatedStock = inventoryItem.stockQuantity - saleItem.quantity
+            val updatedSoldCount = inventoryItem.soldQuantity + saleItem.quantity
+
+            inventoryItems[index] = inventoryItem.copy(
+                stockQuantity = updatedStock,
+                soldQuantity = updatedSoldCount
+            )
         }
 
         return true
@@ -76,8 +89,9 @@ object InventoryRepository {
 
     fun getTotalInventoryValue(): Double {
         var totalValue = 0.0
+        // စုစုပေါင်းတန်ဖိုးကို ရောင်းဈေးအစား အရင်းဈေးနဲ့ တွက်ပါ
         inventoryItems.forEach { item ->
-            totalValue += item.stockQuantity * item.price
+            totalValue += item.stockQuantity * item.costPrice
         }
         return totalValue
     }

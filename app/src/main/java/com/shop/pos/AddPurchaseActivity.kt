@@ -32,7 +32,7 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
     private val purchaseDetailItems = mutableListOf<PurchaseDetailItem>()
 
     private val calendar = Calendar.getInstance()
-    // editingPosition logic is pending for future steps
+    private var editingPosition = -1 // This is for edit logic, not used yet
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,14 +120,14 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
             supplierName = supplierName,
             purchaseDate = purchaseDate,
             items = purchaseDetailItems.toList(),
-            totalAmount = totalAmount
+            totalAmount = totalAmount,
+            hasArrived = false // အမြဲတမ်း "မရောက်သေး" အခြေအနေနဲ့ သိမ်းဆည်းပါ
         )
 
-        // 1. အဝယ်မှတ်တမ်းကို Repository ထဲ သိမ်းပါ
         PurchasesRepository.addPurchaseItem(newPurchase)
 
-        // 2. အဲ့ဒီက ပစ္စည်းတွေကို Inventory Stock ထဲကို ပေါင်းထည့်ပါ
-        InventoryRepository.addStockFromPurchase(purchaseDetailItems.toList())
+        // Inventory ကို update လုပ်တဲ့ စာကြောင်းကို ဒီနေရာကနေ ဖယ်ရှားလိုက်ပါပြီ
+        // InventoryRepository.addStockFromPurchase(purchaseDetailItems.toList())
 
         Toast.makeText(this, "အဝယ်စာရင်းကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
         finish()

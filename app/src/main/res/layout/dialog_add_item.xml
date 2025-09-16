@@ -17,15 +17,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="အရေအတွက်"
+        android:hint="လက်ကျန် အရေအတွက်"
         android:inputType="number" />
+
+    <EditText
+        android:id="@+id/editTextCostPrice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="အရင်းဈေး (Ks)"
+        android:inputType="numberDecimal" />
 
     <EditText
         android:id="@+id/editTextPrice"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="တစ်ခုချင်းဈေးနှုန်း"
+        android:hint="ရောင်းဈေး (Ks)"
         android:inputType="numberDecimal" />
 
 </LinearLayout>

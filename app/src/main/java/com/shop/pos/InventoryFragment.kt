@@ -41,12 +41,18 @@ class InventoryFragment : Fragment(), InventoryItemListener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        inventoryAdapter.notifyDataSetChanged()
+    }
+
     private fun showAddItemDialog(position: Int = -1) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
-        editTextQuantity.hint = "လက်ကျန် အရေအတွက်"
+        // EditText အသစ်ကို ချိတ်ဆက်ပါ
+        val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
 
         val isEditing = position != -1
         val dialogTitle = if(isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
@@ -56,6 +62,8 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             editTextItemName.setText(item.name)
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
+            // data အဟောင်းကို EditText အသစ်မှာ ဖြည့်ပါ
+            editTextCostPrice.setText(item.costPrice.toString())
         }
 
         AlertDialog.Builder(requireContext())
@@ -65,11 +73,23 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                 val name = editTextItemName.text.toString()
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
+                // EditText အသစ်က data ကို ရယူပါ
+                val costPriceStr = editTextCostPrice.text.toString()
 
-                if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty()) {
-                    val item = InventoryItem(name, quantityStr.toInt(), priceStr.toDouble())
+                if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
+                    val price = priceStr.toDouble()
+                    val costPrice = costPriceStr.toDouble()
+
+                    val item = InventoryItem(
+                        name = name,
+                        stockQuantity = quantityStr.toInt(),
+                        price = price,
+                        costPrice = costPrice
+                    )
                     if(isEditing) {
-                        InventoryRepository.updateInventoryItem(position, item)
+                        val oldItem = InventoryRepository.getInventoryItems()[position]
+                        val updatedItemWithSoldCount = item.copy(soldQuantity = oldItem.soldQuantity)
+                        InventoryRepository.updateInventoryItem(position, updatedItemWithSoldCount)
                         inventoryAdapter.notifyItemChanged(position)
                     } else {
                         InventoryRepository.addInventoryItem(item)

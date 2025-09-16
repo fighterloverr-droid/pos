@@ -16,13 +16,17 @@ interface InventoryItemListener {
 
 class InventoryAdapter(
     private val items: List<InventoryItem>,
-    private val listener: InventoryItemListener // Listener ကို လက်ခံပါ
+    private val listener: InventoryItemListener
 ) : RecyclerView.Adapter<InventoryAdapter.InventoryViewHolder>() {
 
     inner class InventoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val itemName: TextView = itemView.findViewById(R.id.textViewItemName)
         val itemStock: TextView = itemView.findViewById(R.id.textViewStock)
         val itemPrice: TextView = itemView.findViewById(R.id.textViewPrice)
+        // UI element အသစ်တွေကို ချိတ်ဆက်ပါ
+        val soldCount: TextView = itemView.findViewById(R.id.textViewSoldCount)
+        val costPrice: TextView = itemView.findViewById(R.id.textViewCostPrice)
+
         private val editButton: ImageButton = itemView.findViewById(R.id.buttonEdit)
         private val deleteButton: ImageButton = itemView.findViewById(R.id.buttonDelete)
 
@@ -50,7 +54,10 @@ class InventoryAdapter(
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
         holder.itemName.text = currentItem.name
-        holder.itemStock.text = "လက်ကျန်: ${currentItem.stockQuantity} ခု"
-        holder.itemPrice.text = "${numberFormat.format(currentItem.price.toInt())} Ks"
+        holder.itemStock.text = "လက်ကျန်: ${currentItem.stockQuantity}"
+        // UI element အသစ်တွေမှာ data တွေ ထည့်ပါ
+        holder.soldCount.text = "ရောင်းပြီး: ${currentItem.soldQuantity}"
+        holder.costPrice.text = "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
+        holder.itemPrice.text = "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
     }
 }

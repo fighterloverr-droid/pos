@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:orientation="vertical"
     android:padding="16dp"
     android:background="?attr/selectableItemBackground">
 
@@ -14,12 +13,12 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/textViewSupplierName"
+            android:id="@+id/textViewCustomerName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:textAppearance="?attr/textAppearanceTitleMedium"
-            tools:text="ABC Electronics Supplier" />
+            tools:text="Ko Min Min" />
 
         <TextView
             android:id="@+id/textViewTotalAmount"
@@ -27,40 +26,16 @@
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textStyle="bold"
-            tools:text="550,000 Ks" />
+            tools:text="25,000 Ks" />
 
     </LinearLayout>
 
     <TextView
-        android:id="@+id/textViewPurchaseDate"
+        android:id="@+id/textViewSaleDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textAppearance="?attr/textAppearanceBodyMedium"
-        tools:text="13-Sep-2025"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:id="@+id/textViewStatus"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textStyle="bold"
-            tools:text="Status: Not Arrived"
-            tools:textColor="@android:color/holo_red_dark"/>
-
-        <Button
-            android:id="@+id/buttonMarkAsArrived"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="?attr/materialButtonOutlinedStyle"
-            android:text="ပစ္စည်းရောက်ရှိ"/>
-    </LinearLayout>
+        tools:text="13-Sep-2025" />
 
 </LinearLayout>

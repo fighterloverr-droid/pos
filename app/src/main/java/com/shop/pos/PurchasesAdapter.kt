@@ -1,37 +1,36 @@
 package com.shop.pos
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
-interface PurchaseItemListener {
-    fun onEditItem(position: Int)
-    fun onDeleteItem(position: Int)
+
+interface PurchaseWorkflowListener {
+    fun onMarkAsArrived(position: Int)
 }
 
 class PurchasesAdapter(
     private val items: List<PurchaseItem>,
-    private val listener: PurchaseItemListener
+    private val listener: PurchaseWorkflowListener
 ) : RecyclerView.Adapter<PurchasesAdapter.PurchaseViewHolder>() {
 
     inner class PurchaseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val supplierName: TextView = itemView.findViewById(R.id.textViewSupplierName)
         val purchaseDate: TextView = itemView.findViewById(R.id.textViewPurchaseDate)
         val totalAmount: TextView = itemView.findViewById(R.id.textViewTotalAmount)
-        private val editButton: ImageButton = itemView.findViewById(R.id.buttonEdit)
-        private val deleteButton: ImageButton = itemView.findViewById(R.id.buttonDelete)
+        val status: TextView = itemView.findViewById(R.id.textViewStatus)
+        val markAsArrivedButton: Button = itemView.findViewById(R.id.buttonMarkAsArrived)
 
         init {
-            editButton.setOnClickListener {
-                listener.onEditItem(adapterPosition)
-            }
-            deleteButton.setOnClickListener {
-                listener.onDeleteItem(adapterPosition)
+            markAsArrivedButton.setOnClickListener {
+                listener.onMarkAsArrived(adapterPosition)
             }
         }
     }
@@ -52,5 +51,15 @@ class PurchasesAdapter(
         holder.supplierName.text = currentItem.supplierName
         holder.purchaseDate.text = currentItem.purchaseDate
         holder.totalAmount.text = "${numberFormat.format(currentItem.totalAmount.toInt())} Ks"
+
+        if (currentItem.hasArrived) {
+            holder.status.text = "ရောက်ပြီ"
+            holder.status.setTextColor(Color.GREEN)
+            holder.markAsArrivedButton.visibility = View.GONE
+        } else {
+            holder.status.text = "မရောက်သေးပါ"
+            holder.status.setTextColor(Color.RED)
+            holder.markAsArrivedButton.visibility = View.VISIBLE
+        }
     }
 }
