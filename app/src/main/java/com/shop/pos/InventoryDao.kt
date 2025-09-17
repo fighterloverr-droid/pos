@@ -23,4 +23,8 @@ interface InventoryDao {
 
     @Query("SELECT * FROM inventory_items WHERE name = :name LIMIT 1")
     suspend fun findItemByName(name: String): InventoryItem?
+
+    // ... (other functions)
+    @Query("SELECT * FROM inventory_items WHERE isForSale = 1 ORDER BY name ASC") // isForSale = true (1)
+    suspend fun getItemsForSale(): List<InventoryItem>
 }

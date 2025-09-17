@@ -70,4 +70,24 @@ class InventoryRepository(private val inventoryDao: InventoryDao) {
         }
         return totalValue
     }
+    // Function အသစ်: အရောင်းကို cancel လုပ်တဲ့အခါ Stock တွေ ပြန်ပေါင်းထည့်ရန်
+    suspend fun addStockFromCancelledSale(saleItems: List<SaleItem>) {
+        for (saleItem in saleItems) {
+            val inventoryItem = inventoryDao.findItemByName(saleItem.name)
+            if (inventoryItem != null) {
+                val updatedStock = inventoryItem.stockQuantity + saleItem.quantity
+                // ရောင်းပြီး အရေအတွက်ကိုလည်း ပြန်နုတ်ပါ
+                val updatedSoldCount = inventoryItem.soldQuantity - saleItem.quantity
+                val updatedItem = inventoryItem.copy(
+                    stockQuantity = updatedStock,
+                    soldQuantity = if (updatedSoldCount < 0) 0 else updatedSoldCount // အနှုတ်မပြအောင် ကာကွယ်ပါ
+                )
+                inventoryDao.update(updatedItem)
+            }
+        }
+    }
+    // ... (other functions)
+    suspend fun getForSaleItems(): List<InventoryItem> {
+        return inventoryDao.getItemsForSale()
+    }
 }

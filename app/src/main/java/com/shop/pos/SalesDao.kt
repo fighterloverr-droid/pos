@@ -1,13 +1,21 @@
 package com.shop.pos
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface SalesDao {
     @Insert
     suspend fun insert(saleRecord: SaleRecord)
+
+    @Update // <-- Function အသစ်
+    suspend fun update(saleRecord: SaleRecord)
+
+    @Delete
+    suspend fun delete(saleRecord: SaleRecord)
 
     @Query("SELECT * FROM sales_records ORDER BY id DESC")
     suspend fun getAllSales(): List<SaleRecord>

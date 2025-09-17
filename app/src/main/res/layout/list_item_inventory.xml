@@ -25,6 +25,15 @@
             android:textAppearance="?attr/textAppearanceTitleMedium"
             tools:text="Coca-Cola" />
 
+        <TextView
+            android:id="@+id/textViewForSaleStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="italic"
+            tools:text="Listed for Sale" />
+
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

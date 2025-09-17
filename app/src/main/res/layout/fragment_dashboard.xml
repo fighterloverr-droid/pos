@@ -23,34 +23,43 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1" />
+
             <include
                 android:id="@+id/cardInventoryValue"
                 layout="@layout/card_metric_layout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1" />
+
             <include
                 android:id="@+id/cardNetProfit"
                 layout="@layout/card_metric_layout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1" />
+
             <include
                 android:id="@+id/cardGrossProfit"
                 layout="@layout/card_metric_layout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_columnWeight="1" />
+
         </GridLayout>
 
-        <Button
-            android:id="@+id/buttonViewSalesHistory"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="အရောင်းမှတ်တမ်းများ ကြည့်ရန်"
-            android:layout_marginTop="16dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"/>
+            android:text="Daily Sales (Last 7 Days)"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginTop="24dp"
+            android:layout_marginStart="8dp"/>
+
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/barChartSales"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="8dp"/>
 
     </LinearLayout>
 </ScrollView>

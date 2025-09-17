@@ -20,5 +20,7 @@ data class SaleRecord(
     val deliveryFee: Double,
     val totalAmount: Double,
     val paymentType: String,
+    var paymentStatus: String = paymentType,
+    val isDelivered: Boolean = false, // <-- Field အသစ်
     val saleDate: String
 ) : Parcelable

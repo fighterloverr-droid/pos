@@ -35,5 +35,12 @@
         android:layout_marginTop="16dp"
         android:hint="ရောင်းဈေး (Ks)"
         android:inputType="numberDecimal" />
-
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchForSale"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:text="အရောင်းတင်မည်"
+        android:checked="true"/>
 </LinearLayout>

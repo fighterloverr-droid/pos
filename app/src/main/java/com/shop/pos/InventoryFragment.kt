@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
 
 class InventoryFragment : Fragment(), InventoryItemListener {
@@ -58,7 +59,9 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             val itemsFromDb = inventoryRepository.getInventoryItems()
             inventoryItems.clear()
             inventoryItems.addAll(itemsFromDb)
-            inventoryAdapter.notifyDataSetChanged()
+            activity?.runOnUiThread {
+                inventoryAdapter.notifyDataSetChanged()
+            }
         }
     }
 
@@ -68,6 +71,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
         val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
+        val switchForSale = dialogView.findViewById<SwitchMaterial>(R.id.switchForSale)
 
         val isEditing = position != -1
         val dialogTitle = if(isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
@@ -78,6 +82,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
             editTextCostPrice.setText(item.costPrice.toString())
+            switchForSale.isChecked = item.isForSale
         }
 
         AlertDialog.Builder(requireContext())
@@ -88,6 +93,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
                 val costPriceStr = editTextCostPrice.text.toString()
+                val isForSale = switchForSale.isChecked
 
                 if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
                     val price = priceStr.toDouble()
@@ -100,7 +106,8 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                                 name = name,
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
-                                costPrice = costPrice
+                                costPrice = costPrice,
+                                isForSale = isForSale
                             )
                             inventoryRepository.updateInventoryItem(updatedItem)
                         } else {
@@ -108,7 +115,8 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                                 name = name,
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
-                                costPrice = costPrice
+                                costPrice = costPrice,
+                                isForSale = isForSale
                             )
                             inventoryRepository.addInventoryItem(newItem)
                         }

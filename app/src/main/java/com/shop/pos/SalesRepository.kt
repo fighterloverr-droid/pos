@@ -13,4 +13,11 @@ class SalesRepository(private val salesDao: SalesDao) {
     suspend fun getTotalSales(): Double? {
         return salesDao.getTotalSales()
     }
+    suspend fun deleteSaleRecord(record: SaleRecord) {
+        salesDao.delete(record)
+    }
+    suspend fun updateSaleRecord(record: SaleRecord) {
+        salesDao.update(record)
+    }
+
 }

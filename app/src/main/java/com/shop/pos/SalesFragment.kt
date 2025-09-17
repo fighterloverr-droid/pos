@@ -18,6 +18,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -39,6 +40,8 @@ class SalesFragment : Fragment(), SalesItemListener {
     private lateinit var editTextCustomerPhone: EditText
     private lateinit var buttonCancel: Button
     private lateinit var buttonConfirmSale: Button
+    private lateinit var switchDelivered: SwitchMaterial
+    private lateinit var buttonViewSalesHistory: Button // <-- variable အသစ်
 
     private val salesItems = mutableListOf<SaleItem>()
     private lateinit var inventoryRepository: InventoryRepository
@@ -81,12 +84,20 @@ class SalesFragment : Fragment(), SalesItemListener {
         editTextDiscount = view.findViewById(R.id.editTextDiscount)
         editTextDeliveryFee = view.findViewById(R.id.editTextDeliveryFee)
         radioGroupPayment = view.findViewById(R.id.radioGroupPayment)
+        switchDelivered = view.findViewById(R.id.switchDelivered)
+        buttonViewSalesHistory = view.findViewById(R.id.buttonViewSalesHistory) // <-- UI element အသစ်ကို ချိတ်ဆက်ပါ
     }
 
     private fun setupListeners() {
         buttonAddItem.setOnClickListener { showProductSelectionDialog() }
         buttonCancel.setOnClickListener { clearSale() }
         buttonConfirmSale.setOnClickListener { confirmSale() }
+
+        // Sales History Button အတွက် Listener အသစ်
+        buttonViewSalesHistory.setOnClickListener {
+            val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
+            startActivity(intent)
+        }
 
         val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -101,14 +112,10 @@ class SalesFragment : Fragment(), SalesItemListener {
 
     private fun updateSummary() {
         val subtotal = salesItems.sumOf { it.quantity * it.price }
-
         val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
         val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
-
         val grandTotal = subtotal - discount + deliveryFee
-
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
-
         textViewSubtotal.text = "စုစုပေါင်း: ${numberFormat.format(subtotal.toInt())} Ks"
         textViewGrandTotal.text = "ကျသင့်ငွေ: ${numberFormat.format(grandTotal.toInt())} Ks"
     }
@@ -125,26 +132,23 @@ class SalesFragment : Fragment(), SalesItemListener {
         editTextDiscount.text.clear()
         editTextDeliveryFee.text.clear()
         radioGroupPayment.check(R.id.radioButtonPaid)
+        switchDelivered.isChecked = false
         updateSummary()
     }
 
     private fun showProductSelectionDialog() {
         lifecycleScope.launch {
-            val inventory = inventoryRepository.getInventoryItems()
+            val inventory = inventoryRepository.getForSaleItems()
             if (inventory.isEmpty()) {
-                Toast.makeText(requireContext(), "Inventory ထဲတွင် ပစ္စည်းမရှိပါ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "အရောင်းတင်ရန် ပစ္စည်းမရှိပါ", Toast.LENGTH_SHORT).show()
                 return@launch
             }
-
             val itemNames = inventory.map { "${it.name} (လက်ကျန်: ${it.stockQuantity})" }.toTypedArray()
-
             AlertDialog.Builder(requireContext())
                 .setTitle("ပစ္စည်း ရွေးချယ်ပါ")
                 .setItems(itemNames) { dialog, which ->
                     val selectedItem = inventory[which]
-
                     val existingItemInCart = salesItems.find { it.name == selectedItem.name }
-
                     if (existingItemInCart != null) {
                         val index = salesItems.indexOf(existingItemInCart)
                         onIncreaseQuantity(index)
@@ -153,7 +157,6 @@ class SalesFragment : Fragment(), SalesItemListener {
                         salesItems.add(newItem)
                         salesAdapter.notifyItemInserted(salesItems.size - 1)
                     }
-
                     updateSummary()
                     dialog.dismiss()
                 }
@@ -180,15 +183,13 @@ class SalesFragment : Fragment(), SalesItemListener {
             val customerName = editTextCustomerName.text.toString()
             val customerPhone = editTextCustomerPhone.text.toString()
             val customerAddress = editTextCustomerAddress.text.toString()
-
             val subtotal = salesItems.sumOf { it.quantity * it.price }
             val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
             val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
             val totalAmount = subtotal - discount + deliveryFee
-
             val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
-            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString()
-
+            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString() ?: "N/A"
+            val isDelivered = switchDelivered.isChecked
             val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
             val currentDate = sdf.format(Date())
 
@@ -202,6 +203,8 @@ class SalesFragment : Fragment(), SalesItemListener {
                 deliveryFee = deliveryFee,
                 totalAmount = totalAmount,
                 paymentType = paymentType,
+                paymentStatus = paymentType,
+                isDelivered = isDelivered,
                 saleDate = currentDate
             )
 
@@ -209,11 +212,9 @@ class SalesFragment : Fragment(), SalesItemListener {
 
             activity?.runOnUiThread {
                 Toast.makeText(requireContext(), "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
-
                 val intent = Intent(requireContext(), VoucherActivity::class.java)
                 intent.putExtra("EXTRA_SALE_RECORD", saleRecord)
                 startActivity(intent)
-
                 clearSale()
             }
         }

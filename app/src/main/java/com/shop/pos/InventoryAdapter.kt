@@ -1,5 +1,6 @@
 package com.shop.pos
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
+// Interface ကို ဒီနေရာမှာ ကြေညာပါ
 interface InventoryItemListener {
     fun onEditItem(position: Int)
     fun onDeleteItem(position: Int)
@@ -23,19 +25,23 @@ class InventoryAdapter(
         val itemName: TextView = itemView.findViewById(R.id.textViewItemName)
         val itemStock: TextView = itemView.findViewById(R.id.textViewStock)
         val itemPrice: TextView = itemView.findViewById(R.id.textViewPrice)
-        // UI element အသစ်တွေကို ချိတ်ဆက်ပါ
         val soldCount: TextView = itemView.findViewById(R.id.textViewSoldCount)
         val costPrice: TextView = itemView.findViewById(R.id.textViewCostPrice)
+        val forSaleStatus: TextView = itemView.findViewById(R.id.textViewForSaleStatus)
 
         private val editButton: ImageButton = itemView.findViewById(R.id.buttonEdit)
         private val deleteButton: ImageButton = itemView.findViewById(R.id.buttonDelete)
 
         init {
             editButton.setOnClickListener {
-                listener.onEditItem(adapterPosition)
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onEditItem(adapterPosition)
+                }
             }
             deleteButton.setOnClickListener {
-                listener.onDeleteItem(adapterPosition)
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onDeleteItem(adapterPosition)
+                }
             }
         }
     }
@@ -55,9 +61,16 @@ class InventoryAdapter(
 
         holder.itemName.text = currentItem.name
         holder.itemStock.text = "လက်ကျန်: ${currentItem.stockQuantity}"
-        // UI element အသစ်တွေမှာ data တွေ ထည့်ပါ
         holder.soldCount.text = "ရောင်းပြီး: ${currentItem.soldQuantity}"
         holder.costPrice.text = "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
         holder.itemPrice.text = "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
+
+        if (currentItem.isForSale) {
+            holder.forSaleStatus.text = "အရောင်းတင်ထားသည်"
+            holder.forSaleStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
+        } else {
+            holder.forSaleStatus.text = "မတင်ရသေးပါ"
+            holder.forSaleStatus.setTextColor(Color.GRAY)
+        }
     }
 }
