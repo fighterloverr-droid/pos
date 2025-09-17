@@ -34,7 +34,6 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
     private lateinit var purchaseDetailAdapter: PurchaseDetailAdapter
     private val purchaseDetailItems = mutableListOf<PurchaseDetailItem>()
 
-    private lateinit var inventoryRepository: InventoryRepository
     private lateinit var purchasesRepository: PurchasesRepository
 
     private val calendar = Calendar.getInstance()
@@ -44,8 +43,6 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_purchase)
 
-        val inventoryDao = (application as PosApplication).database.inventoryDao()
-        inventoryRepository = InventoryRepository(inventoryDao)
         val purchaseDao = (application as PosApplication).database.purchaseDao()
         purchasesRepository = PurchasesRepository(purchaseDao)
 
@@ -64,7 +61,7 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         editingPurchaseId = intent.getIntExtra("EDIT_PURCHASE_ID", -1)
         if (editingPurchaseId != -1) {
             toolbar.title = "အဝယ်မှတ်တမ်း ပြင်ဆင်ရန်"
-            // TODO: Load existing data for editing
+            loadPurchaseData()
         } else {
             toolbar.title = "အဝယ်စာရင်းသစ်ထည့်ရန်"
             updateDateInView()
@@ -75,6 +72,23 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         textViewPurchaseDate.setOnClickListener { showDatePickerDialog() }
         buttonAddItemToPurchase.setOnClickListener { showAddItemDialog() }
         buttonSavePurchase.setOnClickListener { savePurchase() }
+    }
+
+    private fun loadPurchaseData() {
+        lifecycleScope.launch {
+            val purchaseItem = purchasesRepository.getPurchaseById(editingPurchaseId)
+            if (purchaseItem != null) {
+                editTextSupplierName.setText(purchaseItem.supplierName)
+                textViewPurchaseDate.text = purchaseItem.purchaseDate
+                purchaseDetailItems.clear()
+                purchaseDetailItems.addAll(purchaseItem.items)
+                purchaseDetailAdapter.notifyDataSetChanged()
+                updateTotalAmount()
+
+                val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+                calendar.time = sdf.parse(purchaseItem.purchaseDate) ?: Date()
+            }
+        }
     }
 
     private fun savePurchase() {
@@ -88,22 +102,31 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
 
         val totalAmount = purchaseDetailItems.sumOf { it.quantity * it.purchasePrice }
 
-        val newPurchase = PurchaseItem(
-            supplierName = supplierName,
-            purchaseDate = purchaseDate,
-            items = purchaseDetailItems.toList(),
-            totalAmount = totalAmount,
-            hasArrived = false
-        )
-
         lifecycleScope.launch {
-            purchasesRepository.addPurchaseItem(newPurchase)
-            inventoryRepository.addStockFromPurchase(purchaseDetailItems.toList())
-
-            runOnUiThread {
-                Toast.makeText(this@AddPurchaseActivity, "အဝယ်စာရင်းကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
-                finish()
+            if (editingPurchaseId != -1) {
+                val purchaseToUpdate = purchasesRepository.getPurchaseById(editingPurchaseId)
+                val updatedPurchase = PurchaseItem(
+                    id = editingPurchaseId,
+                    supplierName = supplierName,
+                    purchaseDate = purchaseDate,
+                    items = purchaseDetailItems.toList(),
+                    totalAmount = totalAmount,
+                    hasArrived = purchaseToUpdate?.hasArrived ?: false
+                )
+                purchasesRepository.updatePurchaseItem(updatedPurchase)
+                Toast.makeText(this@AddPurchaseActivity, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+            } else {
+                val newPurchase = PurchaseItem(
+                    supplierName = supplierName,
+                    purchaseDate = purchaseDate,
+                    items = purchaseDetailItems.toList(),
+                    totalAmount = totalAmount,
+                    hasArrived = false
+                )
+                purchasesRepository.addPurchaseItem(newPurchase)
+                Toast.makeText(this@AddPurchaseActivity, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
             }
+            finish()
         }
     }
 

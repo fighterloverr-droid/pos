@@ -26,8 +26,6 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pos_database"
                 )
-                    // In a real app, you'd need a proper migration strategy.
-                    // For this tutorial, we just rebuild the database if the schema changes.
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

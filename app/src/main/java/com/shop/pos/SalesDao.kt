@@ -15,5 +15,3 @@ interface SalesDao {
     @Query("SELECT SUM(totalAmount) FROM sales_records")
     suspend fun getTotalSales(): Double?
 }
-
-

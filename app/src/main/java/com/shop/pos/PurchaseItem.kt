@@ -7,9 +7,9 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
 @Parcelize
-@Entity(tableName = "purchase_records") // <-- Entity အဖြစ် သတ်မှတ်ပါ
+@Entity(tableName = "purchase_records")
 data class PurchaseItem(
-    @PrimaryKey(autoGenerate = true) // <-- Primary Key (ID) အဖြစ် သတ်မှတ်ပါ
+    @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val supplierName: String,
     val purchaseDate: String,

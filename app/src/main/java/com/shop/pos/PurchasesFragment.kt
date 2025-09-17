@@ -22,18 +22,15 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
     private lateinit var purchasesRepository: PurchasesRepository
     private var purchaseItems = mutableListOf<PurchaseItem>()
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_purchases, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val purchaseDao = (requireActivity().application as PosApplication).database.purchaseDao()
-        purchasesRepository = PurchasesRepository(purchaseDao)
+        val app = requireActivity().application as PosApplication
+        purchasesRepository = PurchasesRepository(app.database.purchaseDao())
 
         purchasesRecyclerView = view.findViewById(R.id.recyclerViewPurchases)
         fabAddPurchase = view.findViewById(R.id.fabAddPurchase)
@@ -43,7 +40,6 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
         purchasesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         fabAddPurchase.setOnClickListener {
-            // Edit မဟုတ်တဲ့အတွက် -1 ကို position အဖြစ် ပို့စရာမလိုပါ
             startActivity(Intent(requireContext(), AddPurchaseActivity::class.java))
         }
     }
@@ -79,12 +75,9 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
         }
     }
 
-    // --- မဖြစ်မနေလိုအပ်သော Function (၂) ခုကို ထပ်ထည့်ပါ ---
-
     override fun onEditItem(position: Int) {
-        val intent = Intent(requireContext(), AddPurchaseActivity::class.java)
         val itemToEdit = purchaseItems[position]
-        // Database က id ကို Intent ထဲ ထည့်ပေးလိုက်ပါ
+        val intent = Intent(requireContext(), AddPurchaseActivity::class.java)
         intent.putExtra("EDIT_PURCHASE_ID", itemToEdit.id)
         startActivity(intent)
     }
@@ -96,8 +89,7 @@ class PurchasesFragment : Fragment(), PurchaseItemListener {
             .setPositiveButton("ဖျက်မည်") { dialog, _ ->
                 lifecycleScope.launch {
                     val itemToDelete = purchaseItems[position]
-                    // TODO: Implement delete in repository and DAO
-                    // purchasesRepository.deletePurchaseItem(itemToDelete)
+                    purchasesRepository.deletePurchaseItem(itemToDelete)
                     loadPurchases()
                 }
                 dialog.dismiss()

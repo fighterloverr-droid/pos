@@ -18,16 +18,12 @@ import java.util.Locale
 class DashboardFragment : Fragment() {
 
     private var fragmentView: View? = null
-    // Repository တွေကို ကြေညာပါ
     private lateinit var inventoryRepository: InventoryRepository
     private lateinit var purchasesRepository: PurchasesRepository
     private lateinit var salesRepository: SalesRepository
     private lateinit var expensesRepository: ExpensesRepository
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         if (fragmentView == null) {
             fragmentView = inflater.inflate(R.layout.fragment_dashboard, container, false)
         }
@@ -37,13 +33,11 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // --- DAO နှင့် Repository တွေကို ရယူပါ ---
         val app = requireActivity().application as PosApplication
         inventoryRepository = InventoryRepository(app.database.inventoryDao())
         purchasesRepository = PurchasesRepository(app.database.purchaseDao())
         salesRepository = SalesRepository(app.database.salesDao())
         expensesRepository = ExpensesRepository(app.database.expensesDao())
-        // ----------------------------------------
 
         val buttonViewSalesHistory = view.findViewById<Button>(R.id.buttonViewSalesHistory)
         buttonViewSalesHistory.setOnClickListener {
@@ -61,7 +55,6 @@ class DashboardFragment : Fragment() {
         lifecycleScope.launch {
             val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
-            // Repository instance ကနေ function တွေကို ခေါ်ပါ
             val totalSales = salesRepository.getTotalSales() ?: 0.0
             val totalExpenses = expensesRepository.getTotalExpenses() ?: 0.0
             val totalPurchases = purchasesRepository.getTotalPurchases() ?: 0.0
@@ -77,20 +70,17 @@ class DashboardFragment : Fragment() {
                 value = "${numberFormat.format(operatingCash.toInt())} Ks",
                 isNegative = operatingCash < 0
             )
-
             setupMetricCard(
                 cardId = R.id.cardInventoryValue,
                 title = "လက်ကျန်ပစ္စည်းတန်ဖိုး",
                 value = "${numberFormat.format(totalInventoryValue.toInt())} Ks"
             )
-
             setupMetricCard(
                 cardId = R.id.cardNetProfit,
                 title = "အသားတင်အမြတ်ငွေ",
                 value = "${numberFormat.format(netProfit.toInt())} Ks",
                 isNegative = netProfit < 0
             )
-
             setupMetricCard(
                 cardId = R.id.cardGrossProfit,
                 title = "အမြတ်ငွေ (စုစုပေါင်း ရောင်းရငွေ)",
@@ -104,10 +94,8 @@ class DashboardFragment : Fragment() {
             val cardView = view.findViewById<View>(cardId)
             val titleTextView = cardView.findViewById<TextView>(R.id.textViewMetricTitle)
             val valueTextView = cardView.findViewById<TextView>(R.id.textViewMetricValue)
-
             titleTextView.text = title
             valueTextView.text = value
-
             if (isNegative) {
                 valueTextView.setTextColor(Color.RED)
             } else {

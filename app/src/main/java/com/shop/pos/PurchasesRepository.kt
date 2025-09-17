@@ -14,7 +14,14 @@ class PurchasesRepository(private val purchaseDao: PurchaseDao) {
         purchaseDao.update(item)
     }
 
-    // Function အသစ်: စုစုပေါင်းအဝယ်တန်ဖိုးကို တွက်ချက်ရန်
+    suspend fun deletePurchaseItem(item: PurchaseItem) { // <-- Function အသစ်
+        purchaseDao.delete(item)
+    }
+
+    suspend fun getPurchaseById(id: Int): PurchaseItem? { // <-- Function အသစ်
+        return purchaseDao.getPurchaseById(id)
+    }
+
     suspend fun getTotalPurchases(): Double? {
         return purchaseDao.getTotalPurchases()
     }
