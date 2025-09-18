@@ -1,6 +1,8 @@
 package com.shop.pos
 
+import android.Manifest
 import android.content.ContentValues
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
@@ -14,6 +16,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
 import java.io.File
 import java.io.FileOutputStream
@@ -25,6 +29,9 @@ class VoucherActivity : AppCompatActivity() {
 
     private lateinit var voucherLayout: LinearLayout
     private lateinit var buttonSave: Button
+
+    // Permission တောင်းဆိုမှုအတွက် code
+    private val STORAGE_PERMISSION_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,61 +57,107 @@ class VoucherActivity : AppCompatActivity() {
         }
 
         buttonSave.setOnClickListener {
-            val bitmap = getBitmapFromView(voucherLayout)
-            if (bitmap != null) {
-                saveBitmapToGallery(bitmap)
-            }
+            // Save မလုပ်ခင် Permission အရင်စစ်ပါ
+            checkPermissionAndSave()
         }
     }
 
     private fun populateVoucherData(record: SaleRecord) {
-        // ... (this function is the same as before)
+        val textViewDate = findViewById<TextView>(R.id.textViewDate)
+        val textViewCustomerInfo = findViewById<TextView>(R.id.textViewCustomerInfo)
+        val layoutItemsContainer = findViewById<LinearLayout>(R.id.layoutItemsContainer)
+        val textViewSummary = findViewById<TextView>(R.id.textViewSummary)
+        val textViewVoucherGrandTotal = findViewById<TextView>(R.id.textViewVoucherGrandTotal)
+        val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+        textViewDate.text = "Date: ${record.saleDate}"
+        textViewCustomerInfo.text = "Customer: ${record.customerName}, ${record.customerPhone}"
+        layoutItemsContainer.removeAllViews()
+        for (item in record.items) {
+            val itemText = "${item.name} (${item.quantity} x ${numberFormat.format(item.price.toInt())})"
+            val itemAmount = numberFormat.format((item.quantity * item.price).toInt())
+            val rowView = LayoutInflater.from(this).inflate(R.layout.list_item_voucher_row, layoutItemsContainer, false)
+            rowView.findViewById<TextView>(R.id.textViewItemDescription).text = itemText
+            rowView.findViewById<TextView>(R.id.textViewItemAmount).text = itemAmount
+            layoutItemsContainer.addView(rowView)
+        }
+        val summaryText = "Subtotal: ${numberFormat.format(record.subtotal.toInt())} Ks\n" +
+                "Discount: -${numberFormat.format(record.discount.toInt())} Ks\n" +
+                "Delivery: ${numberFormat.format(record.deliveryFee.toInt())} Ks"
+        textViewSummary.text = summaryText
+        textViewVoucherGrandTotal.text = "TOTAL: ${numberFormat.format(record.totalAmount.toInt())} Ks"
     }
 
-    // --- Function အသစ်များ ---
-
-    /**
-     * View (Layout) တစ်ခုကို Bitmap (ပုံ) အဖြစ် ပြောင်းလဲပေးမယ့် function
-     */
-    private fun getBitmapFromView(view: View): Bitmap? {
-        // View ရဲ့ dimension အတိုင်း Bitmap အလွတ်တစ်ခု ဖန်တီးပါ
+    private fun getBitmapFromView(view: View): Bitmap {
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        // Canvas ကို အဲ့ဒီ bitmap ပေါ်မှာ တည်ဆောက်ပါ
         val canvas = Canvas(bitmap)
-        // View ကို canvas ပေါ်မှာ ဆွဲပါ
         view.draw(canvas)
         return bitmap
     }
 
-    /**
-     * Bitmap ကို ဖုန်းရဲ့ Gallery ထဲက Pictures folder ထဲမှာ သိမ်းဆည်းပေးမယ့် function
-     */
+    // --- Permission နှင့် Save Logic အသစ်များ ---
+
+    private fun checkPermissionAndSave() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) { // Android 9 (Pie) နှင့် အောက်အတွက်
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+                // Permission မရှိသေးရင် တောင်းပါ
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
+            } else {
+                // Permission ရှိပြီးသားဆိုရင် တိုက်ရိုက် save ပါ
+                saveVoucher()
+            }
+        } else {
+            // Android 10 နှင့် အထက်အတွက် permission တောင်းစရာမလိုဘဲ တိုက်ရိုက် save နိုင်ပါတယ်
+            saveVoucher()
+        }
+    }
+
+    private fun saveVoucher() {
+        val bitmap = getBitmapFromView(voucherLayout)
+        saveBitmapToGallery(bitmap)
+    }
+
+    // User က permission ကို Allow/Deny ရွေးလိုက်တဲ့အခါ ဒီ function အလုပ်လုပ်ပါတယ်
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission ရသွားပြီဆိုရင် save ပါ
+                saveVoucher()
+            } else {
+                Toast.makeText(this, "Storage Permission is denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun saveBitmapToGallery(bitmap: Bitmap) {
         val filename = "Voucher_${System.currentTimeMillis()}.jpg"
         var fos: OutputStream? = null
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10 နဲ့ အထက်အတွက်
-            val contentResolver = contentResolver
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentResolver = contentResolver
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                }
+                val imageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                fos = imageUri?.let { contentResolver.openOutputStream(it) }
+            } else {
+                val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val image = File(imagesDir, filename)
+                fos = FileOutputStream(image)
             }
-            val imageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-            fos = imageUri?.let { contentResolver.openOutputStream(it) }
-        } else {
-            // Android 9 နဲ့ အောက်အတွက်
-            val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-            val image = File(imagesDir, filename)
-            fos = FileOutputStream(image)
-        }
 
-        fos?.use {
-            // Bitmap ကို JPEG format နဲ့ compress လုပ်ပြီး သိမ်းဆည်းပါ
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+            fos?.use {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                runOnUiThread {
+                    Toast.makeText(this, "ဘောင်ချာကို Gallery ထဲမှာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
             runOnUiThread {
-                Toast.makeText(this, "ဘောင်ချာကို Gallery ထဲမှာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Error saving image: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
