@@ -1,71 +1,141 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
     tools:context=".SettingsActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Settings"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp"/>
-
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:navigationIcon="@drawable/ic_arrow_back"
+                app:title="Settings" />
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="PIN Lock ဖြင့် App ကို ကာကွယ်ရန်"
-            android:textSize="18sp"
-            android:layout_centerVertical="true"
-            android:layout_alignParentStart="true"/>
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchPinLock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"/>
-    </RelativeLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="လုပ်ငန်းအချက်အလက်"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?android:attr/listDivider"/>
+            <EditText
+                android:id="@+id/editTextShopName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆိုင်အမည်"
+                android:inputType="text" />
 
-    <RelativeLayout
-        android:id="@+id/layoutChangePin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true">
+            <EditText
+                android:id="@+id/editTextShopAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆိုင်လိပ်စာ"
+                android:inputType="text" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="PIN နံပါတ် ပြောင်းရန်"
-            android:textSize="18sp"
-            android:layout_centerVertical="true"
-            android:layout_alignParentStart="true"/>
+            <EditText
+                android:id="@+id/editTextShopPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆက်သွယ်ရန် ဖုန်းနံပါတ်"
+                android:inputType="phone" />
 
-    </RelativeLayout>
+            <Button
+                android:id="@+id/buttonSaveShopInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="သိမ်းဆည်းမည်"/>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?android:attr/listDivider"/>
 
-</LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="လုံခြုံရေး"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchPinLock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="PIN Lock ဖြင့် App ကို ကာကွယ်ရန်"
+                android:textSize="18sp"/>
+
+            <TextView
+                android:id="@+id/textViewChangePin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PIN နံပါတ် ပြောင်းရန်"
+                android:textSize="18sp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Data စီမံခန့်ခွဲမှု"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/buttonBackupData"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Data Backup ထုတ်ရန်" />
+
+            <Button
+                android:id="@+id/buttonRestoreData"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Data Restore လုပ်ရန်" />
+
+            <Button
+                android:id="@+id/buttonExportSales"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="အရောင်းစာရင်း Export ထုတ်ရန် (CSV)" />
+
+            <Button
+                android:id="@+id/buttonExportInventory"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="ပစ္စည်းစာရင်း Export ထုတ်ရန် (CSV)" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

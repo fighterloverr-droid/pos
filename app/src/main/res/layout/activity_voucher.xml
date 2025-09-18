@@ -35,11 +35,29 @@
                 android:id="@+id/textViewShopName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="My POS Shop"
+                tools:text="My POS Shop"
                 android:gravity="center"
                 android:textAppearance="?attr/textAppearanceHeadlineSmall"
                 android:textStyle="bold"
                 android:textColor="@android:color/black"/>
+
+            <TextView
+                android:id="@+id/textViewShopAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:textColor="@android:color/black"
+                tools:text="No. 123, Main Road, Yangon"/>
+
+            <TextView
+                android:id="@+id/textViewShopPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:textColor="@android:color/black"
+                tools:text="Tel: 09-123456789"/>
 
             <TextView
                 android:id="@+id/textViewDate"
@@ -47,7 +65,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:textColor="@android:color/black"
-                tools:text="Date: 13-Sep-2025"/>
+                tools:text="Date: 17-Sep-2025"/>
             <TextView
                 android:id="@+id/textViewCustomerInfo"
                 android:layout_width="match_parent"
@@ -137,4 +155,5 @@
             android:layout_weight="1"
             android:text="Save as Image"/>
     </LinearLayout>
+
 </LinearLayout>

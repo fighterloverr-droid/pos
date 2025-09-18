@@ -2,6 +2,8 @@ package com.shop.pos
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -29,8 +31,8 @@ class VoucherActivity : AppCompatActivity() {
 
     private lateinit var voucherLayout: LinearLayout
     private lateinit var buttonSave: Button
+    private lateinit var buttonShare: Button
 
-    // Permission တောင်းဆိုမှုအတွက် code
     private val STORAGE_PERMISSION_CODE = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +46,7 @@ class VoucherActivity : AppCompatActivity() {
 
         voucherLayout = findViewById(R.id.voucherLayout)
         buttonSave = findViewById(R.id.buttonSave)
+        buttonShare = findViewById(R.id.buttonShare)
 
         val saleRecord = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra("EXTRA_SALE_RECORD", SaleRecord::class.java)
@@ -57,29 +60,47 @@ class VoucherActivity : AppCompatActivity() {
         }
 
         buttonSave.setOnClickListener {
-            // Save မလုပ်ခင် Permission အရင်စစ်ပါ
             checkPermissionAndSave()
+        }
+
+        buttonShare.setOnClickListener {
+            Toast.makeText(this, "Print feature coming soon!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun populateVoucherData(record: SaleRecord) {
+        val textViewShopName = findViewById<TextView>(R.id.textViewShopName)
+        val textViewShopAddress = findViewById<TextView>(R.id.textViewShopAddress)
+        val textViewShopPhone = findViewById<TextView>(R.id.textViewShopPhone)
+
+        val prefs = getSharedPreferences("ShopInfoPrefs", Context.MODE_PRIVATE)
+        textViewShopName.text = prefs.getString("SHOP_NAME", "My POS Shop")
+        textViewShopAddress.text = prefs.getString("SHOP_ADDRESS", "Shop Address")
+        textViewShopPhone.text = "Tel: ${prefs.getString("SHOP_PHONE", "-")}"
+
         val textViewDate = findViewById<TextView>(R.id.textViewDate)
         val textViewCustomerInfo = findViewById<TextView>(R.id.textViewCustomerInfo)
         val layoutItemsContainer = findViewById<LinearLayout>(R.id.layoutItemsContainer)
         val textViewSummary = findViewById<TextView>(R.id.textViewSummary)
         val textViewVoucherGrandTotal = findViewById<TextView>(R.id.textViewVoucherGrandTotal)
+
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+
         textViewDate.text = "Date: ${record.saleDate}"
         textViewCustomerInfo.text = "Customer: ${record.customerName}, ${record.customerPhone}"
+
         layoutItemsContainer.removeAllViews()
         for (item in record.items) {
             val itemText = "${item.name} (${item.quantity} x ${numberFormat.format(item.price.toInt())})"
             val itemAmount = numberFormat.format((item.quantity * item.price).toInt())
+
             val rowView = LayoutInflater.from(this).inflate(R.layout.list_item_voucher_row, layoutItemsContainer, false)
             rowView.findViewById<TextView>(R.id.textViewItemDescription).text = itemText
             rowView.findViewById<TextView>(R.id.textViewItemAmount).text = itemAmount
+
             layoutItemsContainer.addView(rowView)
         }
+
         val summaryText = "Subtotal: ${numberFormat.format(record.subtotal.toInt())} Ks\n" +
                 "Discount: -${numberFormat.format(record.discount.toInt())} Ks\n" +
                 "Delivery: ${numberFormat.format(record.deliveryFee.toInt())} Ks"
@@ -87,41 +108,37 @@ class VoucherActivity : AppCompatActivity() {
         textViewVoucherGrandTotal.text = "TOTAL: ${numberFormat.format(record.totalAmount.toInt())} Ks"
     }
 
-    private fun getBitmapFromView(view: View): Bitmap {
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        view.draw(canvas)
-        return bitmap
+    private fun getBitmapFromView(view: View): Bitmap? {
+        return try {
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            view.draw(canvas)
+            bitmap
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
-    // --- Permission နှင့် Save Logic အသစ်များ ---
-
     private fun checkPermissionAndSave() {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) { // Android 9 (Pie) နှင့် အောက်အတွက်
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-                // Permission မရှိသေးရင် တောင်းပါ
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
-            } else {
-                // Permission ရှိပြီးသားဆိုရင် တိုက်ရိုက် save ပါ
-                saveVoucher()
-            }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
         } else {
-            // Android 10 နှင့် အထက်အတွက် permission တောင်းစရာမလိုဘဲ တိုက်ရိုက် save နိုင်ပါတယ်
             saveVoucher()
         }
     }
 
     private fun saveVoucher() {
         val bitmap = getBitmapFromView(voucherLayout)
-        saveBitmapToGallery(bitmap)
+        if (bitmap != null) {
+            saveBitmapToGallery(bitmap)
+        }
     }
 
-    // User က permission ကို Allow/Deny ရွေးလိုက်တဲ့အခါ ဒီ function အလုပ်လုပ်ပါတယ်
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission ရသွားပြီဆိုရင် save ပါ
                 saveVoucher()
             } else {
                 Toast.makeText(this, "Storage Permission is denied", Toast.LENGTH_SHORT).show()

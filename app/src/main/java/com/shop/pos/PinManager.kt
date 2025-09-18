@@ -36,7 +36,7 @@ object PinManager {
 
     // PIN Lock ဖွင့်/ပိတ် အခြေအနေကို ပြန်လည်ရယူရန်
     fun isPinEnabled(context: Context): Boolean {
-        // မူရင်းအားဖြင့် PIN Lock ကို ဖွင့်ထားသည်ဟု သတ်မှတ်သည်
-        return getPreferences(context).getBoolean(KEY_PIN_ENABLED, true)
+        // default value ကို true အစား false သို့ ပြောင်းပါ
+        return getPreferences(context).getBoolean(KEY_PIN_ENABLED, false)
     }
 }

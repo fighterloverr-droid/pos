@@ -1,11 +1,13 @@
 package com.shop.pos
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.IdRes
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +15,8 @@ import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.components.XAxis
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -50,7 +54,12 @@ class DashboardFragment : Fragment() {
 
         barChart = view.findViewById(R.id.barChartSales)
 
-        // Sales History Button နဲ့ သက်ဆိုင်တဲ့ logic ကို ဤနေရာမှ ဖယ်ရှားပြီးဖြစ်သည်
+        // Button ကို ရှာပြီး Listener တပ်ဆင်ခြင်း
+        val buttonViewSalesHistory = view.findViewById<Button>(R.id.buttonViewSalesHistory)
+        buttonViewSalesHistory?.setOnClickListener {
+            val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     override fun onResume() {
@@ -70,7 +79,7 @@ class DashboardFragment : Fragment() {
 
             val grossProfit = totalSales
             val netProfit = grossProfit - totalExpenses
-            val operatingCash = totalSales - totalExpenses
+            val operatingCash = totalInventoryValue + netProfit
 
             setupMetricCard(
                 cardId = R.id.cardOperatingCash,
@@ -81,7 +90,7 @@ class DashboardFragment : Fragment() {
 
             setupMetricCard(
                 cardId = R.id.cardInventoryValue,
-                title = "လက်ကျန်ပစ္စည်းတန်ဖိုး",
+                title = "လက်ကျန်ပစ္စည်းတန်ဖိုး (အရင်း)",
                 value = "${numberFormat.format(totalInventoryValue.toInt())} Ks"
             )
 
@@ -160,8 +169,8 @@ class DashboardFragment : Fragment() {
             barChart.setFitBars(true)
 
             val xAxis = barChart.xAxis
-            xAxis.valueFormatter = com.github.mikephil.charting.formatter.IndexAxisValueFormatter(labels)
-            xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+            xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
             xAxis.granularity = 1f
             xAxis.setDrawGridLines(false)
 
