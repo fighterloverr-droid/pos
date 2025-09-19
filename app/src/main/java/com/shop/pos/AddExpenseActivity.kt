@@ -20,6 +20,7 @@ class AddExpenseActivity : AppCompatActivity() {
     private lateinit var textViewExpenseDate: TextView
     private lateinit var editTextExpenseName: EditText
     private lateinit var editTextExpenseAmount: EditText
+    private lateinit var editTextExpenseCategory: EditText // <-- UI element အသစ်
     private lateinit var buttonSaveExpense: Button
     private lateinit var toolbar: MaterialToolbar
     private lateinit var expensesRepository: ExpensesRepository
@@ -42,6 +43,7 @@ class AddExpenseActivity : AppCompatActivity() {
         textViewExpenseDate = findViewById(R.id.textViewExpenseDate)
         editTextExpenseName = findViewById(R.id.editTextExpenseName)
         editTextExpenseAmount = findViewById(R.id.editTextExpenseAmount)
+        editTextExpenseCategory = findViewById(R.id.editTextExpenseCategory) // <-- ချိတ်ဆက်ပါ
         buttonSaveExpense = findViewById(R.id.buttonSaveExpense)
 
         editingExpenseId = intent.getIntExtra("EDIT_EXPENSE_ID", -1)
@@ -69,6 +71,7 @@ class AddExpenseActivity : AppCompatActivity() {
             if (expenseItem != null) {
                 editTextExpenseName.setText(expenseItem.name)
                 editTextExpenseAmount.setText(expenseItem.amount.toString())
+                editTextExpenseCategory.setText(expenseItem.category) // <-- data load လုပ်ပါ
                 textViewExpenseDate.text = expenseItem.date
 
                 val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
@@ -100,29 +103,30 @@ class AddExpenseActivity : AppCompatActivity() {
         val name = editTextExpenseName.text.toString()
         val amountStr = editTextExpenseAmount.text.toString()
         val date = textViewExpenseDate.text.toString()
+        val category = editTextExpenseCategory.text.toString()
 
-        if (name.isEmpty() || amountStr.isEmpty()) {
-            Toast.makeText(this, "ကျေးဇူးပြု၍ အမည်နှင့် ပမာဏကို ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
+        if (name.isEmpty() || amountStr.isEmpty() || category.isEmpty()) {
+            Toast.makeText(this, "အကွက်အားလုံးကို ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
             return
         }
 
         lifecycleScope.launch {
             if (editingExpenseId != -1) {
-                // Edit Mode
                 val updatedExpense = ExpenseItem(
                     id = editingExpenseId,
                     name = name,
                     date = date,
-                    amount = amountStr.toDouble()
+                    amount = amountStr.toDouble(),
+                    category = category
                 )
                 expensesRepository.updateExpenseItem(updatedExpense)
                 Toast.makeText(this@AddExpenseActivity, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
             } else {
-                // Add Mode
                 val newExpense = ExpenseItem(
                     name = name,
                     date = date,
-                    amount = amountStr.toDouble()
+                    amount = amountStr.toDouble(),
+                    category = category
                 )
                 expensesRepository.addExpenseItem(newExpense)
                 Toast.makeText(this@AddExpenseActivity, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()

@@ -31,7 +31,8 @@ class VoucherActivity : AppCompatActivity() {
 
     private lateinit var voucherLayout: LinearLayout
     private lateinit var buttonSave: Button
-    private lateinit var buttonShare: Button
+    private lateinit var buttonPrint: Button
+    private var saleRecord: SaleRecord? = null
 
     private val STORAGE_PERMISSION_CODE = 101
 
@@ -46,9 +47,11 @@ class VoucherActivity : AppCompatActivity() {
 
         voucherLayout = findViewById(R.id.voucherLayout)
         buttonSave = findViewById(R.id.buttonSave)
-        buttonShare = findViewById(R.id.buttonShare)
+        buttonPrint = findViewById(R.id.buttonShare)
 
-        val saleRecord = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        buttonPrint.text = "Print"
+
+        saleRecord = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra("EXTRA_SALE_RECORD", SaleRecord::class.java)
         } else {
             @Suppress("DEPRECATION")
@@ -56,15 +59,21 @@ class VoucherActivity : AppCompatActivity() {
         }
 
         if (saleRecord != null) {
-            populateVoucherData(saleRecord)
+            populateVoucherData(saleRecord!!)
         }
 
         buttonSave.setOnClickListener {
             checkPermissionAndSave()
         }
 
-        buttonShare.setOnClickListener {
-            Toast.makeText(this, "Print feature coming soon!", Toast.LENGTH_SHORT).show()
+        buttonPrint.setOnClickListener {
+            if (saleRecord != null) {
+                val intent = Intent(this, SelectPrinterActivity::class.java)
+                intent.putExtra("PRINT_DATA", saleRecord)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "No data to print.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

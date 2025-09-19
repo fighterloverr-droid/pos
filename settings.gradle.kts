@@ -3,6 +3,7 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven { url = uri("https://jitpack.io") } // 👉 ဒီလို ထည့်ပေးပါ
     }
 }
 dependencyResolutionManagement {
@@ -10,8 +11,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Chart Library အတွက် ဒီနေရာမှာ ထည့်ပါ
-        maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://jitpack.io") } // 👉 ဒီမှာလဲ ရှိပြီးသား
     }
 }
 

@@ -60,6 +60,18 @@
             android:layout_width="match_parent"
             android:layout_height="300dp"
             android:layout_marginTop="8dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Monthly Expenses by Category"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginTop="24dp"
+            android:layout_marginStart="8dp"/>
 
+        <com.github.mikephil.charting.charts.PieChart
+            android:id="@+id/pieChartExpenses"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_marginTop="8dp"/>
     </LinearLayout>
 </ScrollView>

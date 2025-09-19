@@ -9,5 +9,6 @@ data class ExpenseItem(
     val id: Int = 0,
     val name: String,
     val date: String,
-    val amount: Double
+    val amount: Double, // <-- ဒီနေရာမှာ comma (,) ကျန်နေခဲ့တာပါ
+    val category: String
 )

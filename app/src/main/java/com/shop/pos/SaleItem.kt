@@ -3,9 +3,10 @@ package com.shop.pos
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
-@Parcelize // <-- Annotation အသစ်ထည့်ပါ
+@Parcelize
 data class SaleItem(
     val name: String,
     val quantity: Int,
-    val price: Double
-) : Parcelable // <-- Interface အသစ်ထည့်ပါ
+    val price: Double, // ရောင်းဈေး
+    val costPrice: Double // အရင်းဈေး (field အသစ်)
+) : Parcelable

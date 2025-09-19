@@ -149,11 +149,18 @@ class SalesFragment : Fragment(), SalesItemListener {
                 .setItems(itemNames) { dialog, which ->
                     val selectedItem = inventory[which]
                     val existingItemInCart = salesItems.find { it.name == selectedItem.name }
+
                     if (existingItemInCart != null) {
                         val index = salesItems.indexOf(existingItemInCart)
                         onIncreaseQuantity(index)
                     } else {
-                        val newItem = SaleItem(name = selectedItem.name, quantity = 1, price = selectedItem.price)
+                        // SaleItem အသစ်တည်ဆောက်တဲ့အခါ costPrice ကိုပါ ထည့်ပါ
+                        val newItem = SaleItem(
+                            name = selectedItem.name,
+                            quantity = 1,
+                            price = selectedItem.price,
+                            costPrice = selectedItem.costPrice // <-- အရေးကြီးတဲ့ အပြောင်းအလဲ
+                        )
                         salesItems.add(newItem)
                         salesAdapter.notifyItemInserted(salesItems.size - 1)
                     }

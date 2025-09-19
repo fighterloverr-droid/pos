@@ -46,15 +46,20 @@ dependencies {
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation(libs.androidx.activity)
+    // implementation(libs.androidx.activity) ဆိုတဲ့ စာကြောင်းကို ဖယ်ရှားပြီး၊ လိုအပ်ပါက အောက်ကအတိုင်းသုံးပါမည်
+    implementation("androidx.activity:activity-ktx:1.9.0")
 
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
+
     implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }
