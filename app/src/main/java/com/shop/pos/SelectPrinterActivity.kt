@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -78,32 +79,48 @@ class SelectPrinterActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         deviceAdapter = DeviceAdapter(pairedDevices) { device ->
-            printVoucher(device)
+            showPaperWidthSelectionDialog(device)
         }
         recyclerView.adapter = deviceAdapter
         recyclerView.layoutManager = LinearLayoutManager(this)
     }
 
+    private fun showPaperWidthSelectionDialog(device: BluetoothDevice) {
+        val paperSizes = arrayOf("58mm", "80mm")
+        AlertDialog.Builder(this)
+            .setTitle("Select Paper Width")
+            .setItems(paperSizes) { dialog, which ->
+                val paperWidth = if (which == 0) 48f else 72f
+                printVoucher(device, paperWidth)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
     @SuppressLint("MissingPermission")
-    private fun printVoucher(device: BluetoothDevice) {
+    private fun printVoucher(device: BluetoothDevice, paperWidth: Float) {
         Toast.makeText(this, "Printing to ${device.name}...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch(Dispatchers.IO) {
             var printerService: BluetoothPrinterService? = null
             try {
-                printerService = BluetoothPrinterService(device)
+                printerService = BluetoothPrinterService(device, paperWidth)
                 printerService.connect()
 
                 val shopPrefs = getSharedPreferences("ShopInfoPrefs", Context.MODE_PRIVATE)
                 val shopName = shopPrefs.getString("SHOP_NAME", "My POS Shop") ?: "My POS Shop"
+                val shopAddress = shopPrefs.getString("SHOP_ADDRESS", "") ?: ""
+                val shopPhone = shopPrefs.getString("SHOP_PHONE", "") ?: ""
                 val numberFormat = NumberFormat.getInstance(Locale.US)
 
-                // Print commands
                 printerService.setAlignCenter()
                 printerService.setFontSize("tall_wide", true)
                 printerService.printLine(shopName)
-                printerService.setFontSize("normal")
-                printerService.printLine("--------------------------------")
+                printerService.setFontSize("normal", false)
+                if(shopAddress.isNotEmpty()) printerService.printLine(shopAddress)
+                if(shopPhone.isNotEmpty()) printerService.printLine(shopPhone)
+                printerService.feedLine()
+
                 printerService.setAlignLeft()
                 printerService.printLine("Date: ${saleRecordToPrint!!.saleDate}")
                 printerService.printLine("Customer: ${saleRecordToPrint!!.customerName}")
@@ -113,15 +130,24 @@ class SelectPrinterActivity : AppCompatActivity() {
                     val itemTotal = item.quantity * item.price
                     printerService.printTwoColumn(
                         "${item.name} (${item.quantity}x)",
-                        numberFormat.format(itemTotal)
+                        "${numberFormat.format(itemTotal.toInt())} Ks"
                     )
                 }
 
                 printerService.printLine("--------------------------------")
                 printerService.setAlignRight()
-                printerService.printLine("Subtotal: ${numberFormat.format(saleRecordToPrint!!.subtotal)} Ks")
-                printerService.printLine("Total: ${numberFormat.format(saleRecordToPrint!!.totalAmount)} Ks")
+                printerService.printLine("Subtotal: ${numberFormat.format(saleRecordToPrint!!.subtotal.toInt())} Ks")
+                printerService.printLine("Discount: -${numberFormat.format(saleRecordToPrint!!.discount.toInt())} Ks")
+                printerService.printLine("Delivery: ${numberFormat.format(saleRecordToPrint!!.deliveryFee.toInt())} Ks")
+                printerService.printLine("================================")
+
+                printerService.setAlignLeft()
+                printerService.setFontSize("tall", true)
+                printerService.printTwoColumn("TOTAL:", "${numberFormat.format(saleRecordToPrint!!.totalAmount.toInt())} Ks")
+                printerService.setFontSize("normal", false)
+
                 printerService.setAlignCenter()
+                printerService.printLine("================================")
                 printerService.feedLine()
                 printerService.printLine("*** THANK YOU ***")
                 printerService.feedLine(3)
@@ -154,6 +180,7 @@ class SelectPrinterActivity : AppCompatActivity() {
                 findPairedDevices()
             }
         } else {
+            // For older versions, permissions are handled at install time via Manifest
             findPairedDevices()
         }
     }
