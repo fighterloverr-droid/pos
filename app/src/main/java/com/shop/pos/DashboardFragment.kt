@@ -10,19 +10,19 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.annotation.IdRes
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.github.mikephil.charting.charts.BarChart
-import com.github.mikephil.charting.data.BarData
-import com.github.mikephil.charting.data.BarDataSet
-import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.charts.PieChart
+import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.components.XAxis
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.util.*
+import java.util.TreeMap
 
 class DashboardFragment : Fragment() {
 
@@ -31,7 +31,10 @@ class DashboardFragment : Fragment() {
     private lateinit var purchasesRepository: PurchasesRepository
     private lateinit var salesRepository: SalesRepository
     private lateinit var expensesRepository: ExpensesRepository
+
     private lateinit var barChart: BarChart
+    private lateinit var pieChart: PieChart
+    private lateinit var lineChart: LineChart // LineChart variable အသစ်
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,8 +56,9 @@ class DashboardFragment : Fragment() {
         expensesRepository = ExpensesRepository(app.database.expensesDao())
 
         barChart = view.findViewById(R.id.barChartSales)
+        pieChart = view.findViewById(R.id.pieChartExpenses)
+        lineChart = view.findViewById(R.id.lineChartSales)
 
-        // Button ကို ရှာပြီး Listener တပ်ဆင်ခြင်း
         val buttonViewSalesHistory = view.findViewById<Button>(R.id.buttonViewSalesHistory)
         buttonViewSalesHistory?.setOnClickListener {
             val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
@@ -65,7 +69,9 @@ class DashboardFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         updateDashboardCards()
-        setupSalesChart()
+        setupSalesBarChart()
+        setupExpensesPieChart()
+        setupSalesLineChart()
     }
 
     private fun updateDashboardCards() {
@@ -109,7 +115,12 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun setupMetricCard(@IdRes cardId: Int, title: String, value: String, isNegative: Boolean = false) {
+    private fun setupMetricCard(
+        @IdRes cardId: Int,
+        title: String,
+        value: String,
+        isNegative: Boolean = false
+    ) {
         fragmentView?.let { view ->
             val cardView = view.findViewById<View>(cardId)
             val titleTextView = cardView.findViewById<TextView>(R.id.textViewMetricTitle)
@@ -124,7 +135,7 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun setupSalesChart() {
+    private fun setupSalesBarChart() {
         lifecycleScope.launch {
             val salesRecords = salesRepository.getSaleRecords()
 
@@ -135,11 +146,14 @@ class DashboardFragment : Fragment() {
             sevenDaysAgo.add(Calendar.DAY_OF_YEAR, -7)
 
             salesRecords.filter {
-                val recordDate = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it.saleDate)
+                val recordDate =
+                    SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it.saleDate)
                 recordDate != null && recordDate.after(sevenDaysAgo.time)
             }.forEach { record ->
-                val dayKey = sdf.format(SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(record.saleDate) ?: Date())
-                salesByDate[dayKey] = (salesByDate[dayKey] ?: 0f) + record.totalAmount.toFloat()
+                val dayKey =
+                    sdf.format(SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(record.saleDate) ?: Date())
+                salesByDate[dayKey] =
+                    (salesByDate[dayKey] ?: 0f) + record.totalAmount.toFloat()
             }
 
             val entries = ArrayList<BarEntry>()
@@ -175,6 +189,141 @@ class DashboardFragment : Fragment() {
             xAxis.setDrawGridLines(false)
 
             barChart.invalidate()
+        }
+    }
+
+    private fun setupExpensesPieChart() {
+        lifecycleScope.launch {
+            val expenses = expensesRepository.getExpenseItems()
+
+            val currentMonthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val currentMonthStr = currentMonthFormat.format(Date())
+
+            val monthlyExpenses = expenses.filter {
+                try {
+                    val recordDate =
+                        SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it.date)
+                    recordDate != null && currentMonthFormat.format(recordDate) == currentMonthStr
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            if (monthlyExpenses.isEmpty()) {
+                pieChart.clear()
+                pieChart.invalidate()
+                pieChart.visibility = View.GONE
+                return@launch
+            }
+
+            pieChart.visibility = View.VISIBLE
+
+            val expensesByCategory = monthlyExpenses.groupBy { it.category }
+                .mapValues { entry -> entry.value.sumOf { it.amount }.toFloat() }
+
+            val entries = ArrayList<PieEntry>()
+            expensesByCategory.forEach { (category, total) ->
+                entries.add(PieEntry(total, category))
+            }
+
+            val dataSet = PieDataSet(entries, "Monthly Expenses")
+            dataSet.colors = listOf(
+                Color.parseColor("#F44336"),
+                Color.parseColor("#2196F3"),
+                Color.parseColor("#4CAF50"),
+                Color.parseColor("#FF9800"),
+                Color.parseColor("#9C27B0")
+            )
+            dataSet.sliceSpace = 2f
+            dataSet.valueTextSize = 12f
+            dataSet.valueTextColor = Color.WHITE
+
+            val pieData = PieData(dataSet)
+
+            pieChart.data = pieData
+            pieChart.setUsePercentValues(true)
+            pieChart.description.isEnabled = false
+            pieChart.isDrawHoleEnabled = true
+            pieChart.setEntryLabelColor(Color.BLACK)
+            pieChart.setEntryLabelTextSize(12f)
+            pieChart.legend.isEnabled = true
+
+            pieChart.invalidate()
+        }
+    }
+
+    /**
+     * Line Chart - Monthly Sales
+     */
+    private fun setupSalesLineChart() {
+        lifecycleScope.launch {
+            val salesRecords = salesRepository.getSaleRecords()
+
+            val currentMonthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val currentMonthStr = currentMonthFormat.format(Date())
+
+            val monthlySales = salesRecords.filter {
+                try {
+                    val recordDate =
+                        SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it.saleDate)
+                    recordDate != null && currentMonthFormat.format(recordDate) == currentMonthStr
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            if (monthlySales.isEmpty()) {
+                lineChart.visibility = View.GONE
+                return@launch
+            }
+
+            lineChart.visibility = View.VISIBLE
+
+            val salesByDay = TreeMap<Int, Float>()
+            val dayFormat = SimpleDateFormat("d", Locale.getDefault())
+
+            monthlySales.forEach { record ->
+                val recordDate =
+                    SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(record.saleDate)
+                if (recordDate != null) {
+                    val dayOfMonth = dayFormat.format(recordDate).toInt()
+                    salesByDay[dayOfMonth] =
+                        (salesByDay[dayOfMonth] ?: 0f) + record.totalAmount.toFloat()
+                }
+            }
+
+            val entries = ArrayList<Entry>()
+            salesByDay.forEach { (day, total) ->
+                entries.add(Entry(day.toFloat(), total))
+            }
+
+            val dataSet = LineDataSet(entries, "Monthly Sales")
+            dataSet.color = ContextCompat.getColor(requireContext(), R.color.purple_500)
+            dataSet.valueTextColor = ContextCompat.getColor(requireContext(), R.color.black)
+            dataSet.setCircleColor(dataSet.color)
+            dataSet.lineWidth = 2f
+            dataSet.circleRadius = 4f
+            dataSet.setDrawCircleHole(false)
+            dataSet.valueTextSize = 10f
+            dataSet.setDrawFilled(true)
+            dataSet.fillDrawable =
+                ContextCompat.getDrawable(requireContext(), R.drawable.chart_fade_purple)
+
+            val lineData = LineData(dataSet)
+            lineChart.data = lineData
+            lineChart.description.isEnabled = false
+            lineChart.legend.isEnabled = false
+
+            val xAxis = lineChart.xAxis
+            xAxis.position = XAxis.XAxisPosition.BOTTOM
+            xAxis.granularity = 1f
+            xAxis.setDrawGridLines(false)
+
+            lineChart.axisRight.isEnabled = false
+            lineChart.axisLeft.setDrawGridLines(true)
+
+            lineChart.animateX(1000)
+            lineChart.invalidate()
         }
     }
 }

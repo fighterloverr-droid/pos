@@ -17,8 +17,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.switchmaterial.SwitchMaterial
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -44,6 +46,10 @@ class SettingsActivity : AppCompatActivity() {
     // Permission code
     private val STORAGE_PERMISSION_CODE = 101
 
+    // Repo instances
+    private lateinit var salesRepository: SalesRepository
+    private lateinit var inventoryRepository: InventoryRepository
+
     // File picker launcher
     private val restoreLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -58,9 +64,11 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
-            finish()
-        }
+        toolbar.setNavigationOnClickListener { finish() }
+
+        val app = application as PosApplication
+        salesRepository = SalesRepository(app.database.salesDao())
+        inventoryRepository = InventoryRepository(app.database.inventoryDao())
 
         // --- UI element bindings ---
         editTextShopName = findViewById(R.id.editTextShopName)
@@ -79,28 +87,22 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        buttonSaveShopInfo.setOnClickListener {
-            saveShopInfo()
-        }
+        buttonSaveShopInfo.setOnClickListener { saveShopInfo() }
         switchPinLock.setOnCheckedChangeListener { _, isChecked ->
             PinManager.setPinEnabled(this, isChecked)
             val status = if (isChecked) "ဖွင့်လိုက်ပါပြီ" else "ပိတ်လိုက်ပါပြီ"
             Toast.makeText(this, "PIN Lock ကို $status", Toast.LENGTH_SHORT).show()
         }
-        textViewChangePin.setOnClickListener {
-            showChangePinDialog()
-        }
-        buttonBackupData.setOnClickListener {
-            checkPermissionAndBackup()
-        }
-        buttonRestoreData.setOnClickListener {
-            showRestoreConfirmationDialog()
-        }
+        textViewChangePin.setOnClickListener { showChangePinDialog() }
+        buttonBackupData.setOnClickListener { checkPermissionAndBackup() }
+        buttonRestoreData.setOnClickListener { showRestoreConfirmationDialog() }
+
+        // --- Export Listeners ---
         buttonExportSales.setOnClickListener {
-            Toast.makeText(this, "Export Sales feature coming soon!", Toast.LENGTH_SHORT).show()
+            checkPermissionAndExport { exportSalesToCsv() }
         }
         buttonExportInventory.setOnClickListener {
-            Toast.makeText(this, "Export Inventory feature coming soon!", Toast.LENGTH_SHORT).show()
+            checkPermissionAndExport { exportInventoryToCsv() }
         }
     }
 
@@ -109,7 +111,6 @@ class SettingsActivity : AppCompatActivity() {
         editTextShopName.setText(prefs.getString("SHOP_NAME", ""))
         editTextShopAddress.setText(prefs.getString("SHOP_ADDRESS", ""))
         editTextShopPhone.setText(prefs.getString("SHOP_PHONE", ""))
-
         switchPinLock.isChecked = PinManager.isPinEnabled(this)
     }
 
@@ -139,12 +140,11 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, "ကျေးဇူးပြု၍ ဂဏန်း ၄ လုံး ထည့်ပါ", Toast.LENGTH_SHORT).show()
             }
         }
-        builder.setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
-            dialog.cancel()
-        }
+        builder.setNegativeButton("မလုပ်တော့ပါ") { dialog, _ -> dialog.cancel() }
         builder.show()
     }
 
+    // --- Backup/Restore ---
     private fun checkPermissionAndBackup() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
@@ -172,16 +172,14 @@ class SettingsActivity : AppCompatActivity() {
                 return
             }
             val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "PosBackup")
-            if (!backupDir.exists()) {
-                backupDir.mkdirs()
-            }
+            if (!backupDir.exists()) backupDir.mkdirs()
             val backupFile = File(backupDir, "pos_backup.db")
             FileInputStream(dbFile).channel.use { source ->
                 FileOutputStream(backupFile).channel.use { destination ->
                     destination.transferFrom(source, 0, source.size())
-                    Toast.makeText(this, "Backup saved to Downloads/PosBackup folder", Toast.LENGTH_LONG).show()
                 }
             }
+            Toast.makeText(this, "Backup saved to Downloads/PosBackup folder", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -191,7 +189,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun showRestoreConfirmationDialog() {
         AlertDialog.Builder(this)
             .setTitle("Data Restore လုပ်ရန်")
-            .setMessage("Data restore လုပ်လိုက်ပါက လက်ရှိ data များအားလုံး ပျက်စီးပြီး backup data များဖြင့် အစားထိုးသွားမှာ ဖြစ်ပါတယ်။ ဆက်လုပ်မှာ သေချာလား?")
+            .setMessage("Restore လုပ်ပါက လက်ရှိ data အားလုံးကို backup data ဖြင့် အစားထိုးမည်။ ဆက်လုပ်မလား?")
             .setPositiveButton("Restore လုပ်မည်") { dialog, _ ->
                 openFilePicker()
                 dialog.dismiss()
@@ -210,28 +208,89 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun restoreDatabaseFromUri(backupFileUri: android.net.Uri) {
         val dbFile = getDatabasePath("pos_database")
-
         try {
             (application as PosApplication).database.close()
-
-            val inputStream = contentResolver.openInputStream(backupFileUri)
-            val outputStream = FileOutputStream(dbFile)
-            inputStream?.use { input ->
-                outputStream.use { output ->
-                    input.copyTo(output)
-                }
+            contentResolver.openInputStream(backupFileUri)?.use { inputStream ->
+                FileOutputStream(dbFile).use { outputStream -> inputStream.copyTo(outputStream) }
             }
-            Toast.makeText(this, "Restore successful! Restarting app...", Toast.LENGTH_LONG).show()
-
-            val packageManager = packageManager
-            val intent = packageManager.getLaunchIntentForPackage(packageName)
-            val componentName = intent!!.component
-            val mainIntent = Intent.makeRestartActivityTask(componentName)
-            startActivity(mainIntent)
-            System.exit(0)
+            AlertDialog.Builder(this)
+                .setTitle("Restore Successful")
+                .setMessage("Data restore အောင်မြင်ပါသည်။ App ကို restart လုပ်ရန်လိုအပ်ပါသည်။")
+                .setPositiveButton("Restart Now") { _, _ ->
+                    val pm = packageManager
+                    val intent = pm.getLaunchIntentForPackage(packageName)
+                    val componentName = intent!!.component
+                    val mainIntent = Intent.makeRestartActivityTask(componentName)
+                    startActivity(mainIntent)
+                    System.exit(0)
+                }
+                .setCancelable(false)
+                .show()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // --- Export to CSV ---
+    private fun checkPermissionAndExport(exportAction: () -> Unit) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
+        } else {
+            exportAction()
+        }
+    }
+
+    private fun exportSalesToCsv() {
+        lifecycleScope.launch {
+            val salesRecords = salesRepository.getSaleRecords()
+            if (salesRecords.isEmpty()) {
+                runOnUiThread {
+                    Toast.makeText(this@SettingsActivity, "No sales data to export.", Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+            val csvHeader = "Date,Customer,Phone,Address,Items,Subtotal,Discount,Delivery,Total,PaymentType,PaymentStatus,IsDelivered\n"
+            val sb = StringBuilder().append(csvHeader)
+            salesRecords.forEach { record ->
+                val itemsString = record.items.joinToString(" | ") { "${it.name}(${it.quantity})" }.replace(",", ";")
+                sb.append("\"${record.saleDate}\",\"${record.customerName}\",\"${record.customerPhone}\",\"${record.customerAddress}\",\"$itemsString\",${record.subtotal},${record.discount},${record.deliveryFee},${record.totalAmount},\"${record.paymentType}\",\"${record.paymentStatus}\",${record.isDelivered}\n")
+            }
+            saveCsvToFile("sales_export.csv", sb.toString())
+        }
+    }
+
+    private fun exportInventoryToCsv() {
+        lifecycleScope.launch {
+            val inventoryItems = inventoryRepository.getInventoryItems()
+            if (inventoryItems.isEmpty()) {
+                runOnUiThread {
+                    Toast.makeText(this@SettingsActivity, "No inventory data to export.", Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+            val csvHeader = "ID,Name,StockQuantity,SellingPrice,CostPrice,SoldCount,IsForSale\n"
+            val sb = StringBuilder().append(csvHeader)
+            inventoryItems.forEach { item ->
+                sb.append("${item.id},\"${item.name}\",${item.stockQuantity},${item.price},${item.costPrice},${item.soldQuantity},${item.isForSale}\n")
+            }
+            saveCsvToFile("inventory_export.csv", sb.toString())
+        }
+    }
+
+    private fun saveCsvToFile(fileName: String, content: String) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val file = File(downloadsDir, fileName)
+            FileOutputStream(file).use { it.write(content.toByteArray()) }
+            runOnUiThread {
+                Toast.makeText(this, "Exported to Downloads/$fileName", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            runOnUiThread {
+                Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 }

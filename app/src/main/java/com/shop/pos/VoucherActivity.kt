@@ -160,16 +160,19 @@ class VoucherActivity : AppCompatActivity() {
         var fos: OutputStream? = null
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val contentResolver = contentResolver
+                val resolver = contentResolver
                 val contentValues = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
                     put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "PosVouchers")
                 }
-                val imageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                fos = imageUri?.let { contentResolver.openOutputStream(it) }
+                val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                fos = imageUri?.let { resolver.openOutputStream(it) }
             } else {
-                val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val imagesDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "PosVouchers")
+                if (!imagesDir.exists()) {
+                    imagesDir.mkdirs()
+                }
                 val image = File(imagesDir, filename)
                 fos = FileOutputStream(image)
             }
@@ -177,7 +180,7 @@ class VoucherActivity : AppCompatActivity() {
             fos?.use {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
                 runOnUiThread {
-                    Toast.makeText(this, "ဘောင်ချာကို Gallery ထဲမှာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Voucher saved to Pictures/PosVouchers", Toast.LENGTH_LONG).show()
                 }
             }
         } catch (e: Exception) {
