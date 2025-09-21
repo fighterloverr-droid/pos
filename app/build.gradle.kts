@@ -48,6 +48,7 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     // implementation(libs.androidx.activity) ဆိုတဲ့ စာကြောင်းကို ဖယ်ရှားပြီး၊ လိုအပ်ပါက အောက်ကအတိုင်းသုံးပါမည်
     implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation(libs.androidx.activity)
 
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
@@ -62,4 +63,14 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+
+    val camerax_version = "1.3.3"
+    implementation("androidx.camera:camera-core:${camerax_version}")
+    implementation("androidx.camera:camera-camera2:${camerax_version}")
+    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+    implementation("androidx.camera:camera-view:${camerax_version}")
+
+    // ML Kit Text Recognition
+    implementation("com.google.mlkit:text-recognition:16.0.0")
+
 }

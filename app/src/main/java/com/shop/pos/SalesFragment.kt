@@ -1,5 +1,6 @@
 package com.shop.pos
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -8,12 +9,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,8 +18,8 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
+import androidx.activity.result.contract.ActivityResultContracts
 
 class SalesFragment : Fragment(), SalesItemListener {
 
@@ -41,11 +37,22 @@ class SalesFragment : Fragment(), SalesItemListener {
     private lateinit var buttonCancel: Button
     private lateinit var buttonConfirmSale: Button
     private lateinit var switchDelivered: SwitchMaterial
-    private lateinit var buttonViewSalesHistory: Button // <-- variable အသစ်
+    private lateinit var buttonViewSalesHistory: Button
+    private lateinit var buttonScanCode: ImageButton // <-- Scan Button variable
 
     private val salesItems = mutableListOf<SaleItem>()
     private lateinit var inventoryRepository: InventoryRepository
     private lateinit var salesRepository: SalesRepository
+
+    // Scanner Activity ကနေ data ပြန်လက်ခံဖို့ Launcher
+    private val scannerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val scannedCode = result.data?.getStringExtra("SCANNED_CODE")
+            if (!scannedCode.isNullOrEmpty()) {
+                findAndAddItemByCode(scannedCode)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -85,7 +92,8 @@ class SalesFragment : Fragment(), SalesItemListener {
         editTextDeliveryFee = view.findViewById(R.id.editTextDeliveryFee)
         radioGroupPayment = view.findViewById(R.id.radioGroupPayment)
         switchDelivered = view.findViewById(R.id.switchDelivered)
-        buttonViewSalesHistory = view.findViewById(R.id.buttonViewSalesHistory) // <-- UI element အသစ်ကို ချိတ်ဆက်ပါ
+        buttonViewSalesHistory = view.findViewById(R.id.buttonViewSalesHistory)
+        buttonScanCode = view.findViewById(R.id.buttonScanCode) // <-- Scan button
     }
 
     private fun setupListeners() {
@@ -93,10 +101,16 @@ class SalesFragment : Fragment(), SalesItemListener {
         buttonCancel.setOnClickListener { clearSale() }
         buttonConfirmSale.setOnClickListener { confirmSale() }
 
-        // Sales History Button အတွက် Listener အသစ်
+        // Sales History Button
         buttonViewSalesHistory.setOnClickListener {
             val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
             startActivity(intent)
+        }
+
+        // Scan Button
+        buttonScanCode.setOnClickListener {
+            val intent = Intent(requireContext(), ScannerActivity::class.java)
+            scannerLauncher.launch(intent)
         }
 
         val textWatcher = object : TextWatcher {
@@ -154,12 +168,11 @@ class SalesFragment : Fragment(), SalesItemListener {
                         val index = salesItems.indexOf(existingItemInCart)
                         onIncreaseQuantity(index)
                     } else {
-                        // SaleItem အသစ်တည်ဆောက်တဲ့အခါ costPrice ကိုပါ ထည့်ပါ
                         val newItem = SaleItem(
                             name = selectedItem.name,
                             quantity = 1,
                             price = selectedItem.price,
-                            costPrice = selectedItem.costPrice // <-- အရေးကြီးတဲ့ အပြောင်းအလဲ
+                            costPrice = selectedItem.costPrice
                         )
                         salesItems.add(newItem)
                         salesAdapter.notifyItemInserted(salesItems.size - 1)
@@ -169,6 +182,32 @@ class SalesFragment : Fragment(), SalesItemListener {
                 }
                 .create()
                 .show()
+        }
+    }
+
+    private fun findAndAddItemByCode(code: String) {
+        lifecycleScope.launch {
+            val itemFromDb = inventoryRepository.findItemByCode(code)
+
+            if (itemFromDb != null) {
+                val existingItemInCart = salesItems.find { it.name == itemFromDb.name }
+                if (existingItemInCart != null) {
+                    val index = salesItems.indexOf(existingItemInCart)
+                    onIncreaseQuantity(index)
+                } else {
+                    val newItem = SaleItem(
+                        name = itemFromDb.name,
+                        quantity = 1,
+                        price = itemFromDb.price,
+                        costPrice = itemFromDb.costPrice
+                    )
+                    salesItems.add(newItem)
+                    salesAdapter.notifyItemInserted(salesItems.size - 1)
+                }
+                updateSummary()
+            } else {
+                Toast.makeText(requireContext(), "Code '$code' not found in inventory", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

@@ -23,6 +23,7 @@ class InventoryAdapter(
 
     inner class InventoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val itemName: TextView = itemView.findViewById(R.id.textViewItemName)
+        val itemCode: TextView = itemView.findViewById(R.id.textViewItemCode) // အသစ်ထည့်ထားသည်
         val itemStock: TextView = itemView.findViewById(R.id.textViewStock)
         val itemPrice: TextView = itemView.findViewById(R.id.textViewPrice)
         val soldCount: TextView = itemView.findViewById(R.id.textViewSoldCount)
@@ -47,7 +48,8 @@ class InventoryAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InventoryViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_inventory, parent, false)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.list_item_inventory, parent, false)
         return InventoryViewHolder(view)
     }
 
@@ -59,11 +61,15 @@ class InventoryAdapter(
         val currentItem = items[position]
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
+        // အချက်အလက်များ binding
         holder.itemName.text = currentItem.name
+        holder.itemCode.text = "Code: ${currentItem.code}" // အသစ်ထည့်ထားသည်
         holder.itemStock.text = "လက်ကျန်: ${currentItem.stockQuantity}"
         holder.soldCount.text = "ရောင်းပြီး: ${currentItem.soldQuantity}"
-        holder.costPrice.text = "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
-        holder.itemPrice.text = "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
+        holder.costPrice.text =
+            "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
+        holder.itemPrice.text =
+            "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
 
         if (currentItem.isForSale) {
             holder.forSaleStatus.text = "အရောင်းတင်ထားသည်"

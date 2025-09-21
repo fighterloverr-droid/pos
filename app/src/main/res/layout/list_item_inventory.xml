@@ -26,6 +26,14 @@
             tools:text="Coca-Cola" />
 
         <TextView
+            android:id="@+id/textViewItemCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="CODE: SKU-001" />
+
+        <TextView
             android:id="@+id/textViewForSaleStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

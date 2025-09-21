@@ -26,4 +26,8 @@ interface InventoryDao {
     // Query အသစ်
     @Query("SELECT * FROM inventory_items WHERE isForSale = 1 ORDER BY name ASC") // isForSale = true (1)
     suspend fun getItemsForSale(): List<InventoryItem>
+
+    @Query("SELECT * FROM inventory_items WHERE code = :code LIMIT 1")
+    suspend fun findItemByCode(code: String): InventoryItem?
+
 }

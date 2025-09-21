@@ -72,6 +72,15 @@
                 android:text="မှာယူသော ပစ္စည်းများ"
                 android:textAppearance="?attr/textAppearanceTitleMedium" />
 
+            <ImageButton
+                android:id="@+id/buttonScanCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_scan"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Scan Code"
+                android:padding="8dp"/>
+
             <Button
                 android:id="@+id/buttonViewSalesHistory"
                 style="@style/Widget.Material3.Button.TextButton"

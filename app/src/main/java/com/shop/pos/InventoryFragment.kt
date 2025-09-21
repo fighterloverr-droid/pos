@@ -66,19 +66,24 @@ class InventoryFragment : Fragment(), InventoryItemListener {
     }
 
     private fun showAddItemDialog(position: Int = -1) {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
+        val dialogView =
+            LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
+
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
+        val editTextItemCode = dialogView.findViewById<EditText>(R.id.editTextItemCode) // <-- အသစ်
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
         val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
         val switchForSale = dialogView.findViewById<SwitchMaterial>(R.id.switchForSale)
 
         val isEditing = position != -1
-        val dialogTitle = if(isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
+        val dialogTitle =
+            if (isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
 
         if (isEditing) {
             val item = inventoryItems[position]
             editTextItemName.setText(item.name)
+            editTextItemCode.setText(item.code) // <-- အသစ်
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
             editTextCostPrice.setText(item.costPrice.toString())
@@ -90,20 +95,24 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             .setView(dialogView)
             .setPositiveButton("သိမ်းမည်") { dialog, _ ->
                 val name = editTextItemName.text.toString()
+                val code = editTextItemCode.text.toString() // <-- အသစ်
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
                 val costPriceStr = editTextCostPrice.text.toString()
                 val isForSale = switchForSale.isChecked
 
-                if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
+                if (name.isNotEmpty() && code.isNotEmpty() &&
+                    quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()
+                ) {
                     val price = priceStr.toDouble()
                     val costPrice = costPriceStr.toDouble()
 
                     lifecycleScope.launch {
-                        if(isEditing) {
+                        if (isEditing) {
                             val oldItem = inventoryItems[position]
                             val updatedItem = oldItem.copy(
                                 name = name,
+                                code = code, // <-- အသစ်
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
@@ -113,6 +122,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                         } else {
                             val newItem = InventoryItem(
                                 name = name,
+                                code = code, // <-- အသစ်
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
@@ -124,7 +134,11 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                     }
                     dialog.dismiss()
                 } else {
-                    Toast.makeText(requireContext(), "အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        requireContext(),
+                        "အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
             .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->
