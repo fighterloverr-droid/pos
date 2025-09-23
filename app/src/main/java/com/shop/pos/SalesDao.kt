@@ -22,4 +22,7 @@ interface SalesDao {
 
     @Query("SELECT SUM(totalAmount) FROM sales_records")
     suspend fun getTotalSales(): Double?
+
+    @Query("SELECT * FROM sales_records WHERE id = :id")
+    suspend fun getSaleById(id: Int): SaleRecord?
 }

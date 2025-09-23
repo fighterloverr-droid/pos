@@ -72,5 +72,8 @@ dependencies {
 
     // ML Kit Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:text-recognition:16.0.0")
 
+    // ML Kit Barcode Scanning (dependency အသစ်)
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
 }

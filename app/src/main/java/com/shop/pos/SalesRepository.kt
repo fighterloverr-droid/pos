@@ -31,4 +31,7 @@ class SalesRepository(private val salesDao: SalesDao) {
         }
         return totalCost
     }
+    suspend fun getSaleById(id: Int): SaleRecord? {
+        return salesDao.getSaleById(id)
+    }
 }

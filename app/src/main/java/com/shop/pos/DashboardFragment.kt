@@ -298,7 +298,7 @@ class DashboardFragment : Fragment() {
             }
 
             val dataSet = LineDataSet(entries, "Monthly Sales")
-            dataSet.color = ContextCompat.getColor(requireContext(), R.color.purple_500)
+            dataSet.color = ContextCompat.getColor(requireContext(), R.color.primary_teal)
             dataSet.valueTextColor = ContextCompat.getColor(requireContext(), R.color.black)
             dataSet.setCircleColor(dataSet.color)
             dataSet.lineWidth = 2f

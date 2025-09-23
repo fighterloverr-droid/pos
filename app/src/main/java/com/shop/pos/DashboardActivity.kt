@@ -48,7 +48,6 @@ class DashboardActivity : AppCompatActivity() {
                     loadFragment(PurchasesFragment())
                     true
                 }
-                // Navigation case အသစ် ထပ်ထည့်ပါ
                 R.id.navigation_expenses -> {
                     titleTextView.text = "Expenses"
                     loadFragment(ExpensesFragment())
@@ -59,8 +58,37 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         if (savedInstanceState == null) {
-            bottomNav.selectedItemId = R.id.navigation_dashboard
+            // Check for extras from intent first
+            if (!handleIntentExtras(intent)) {
+                // If no extras, load default fragment
+                bottomNav.selectedItemId = R.id.navigation_dashboard
+            }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntentExtras(intent)
+    }
+
+    private fun handleIntentExtras(intent: Intent): Boolean {
+        if (intent.hasExtra("TARGET_FRAGMENT")) {
+            when (intent.getStringExtra("TARGET_FRAGMENT")) {
+                "SALES" -> {
+                    val saleId = intent.getIntExtra("EDIT_SALE_ID", -1)
+                    val bundle = Bundle().apply {
+                        putInt("EDIT_SALE_ID", saleId)
+                    }
+                    val salesFragment = SalesFragment().apply {
+                        arguments = bundle
+                    }
+                    loadFragment(salesFragment)
+                    bottomNav.selectedItemId = R.id.navigation_sales
+                    return true // Handled
+                }
+            }
+        }
+        return false // Not handled
     }
 
     private fun loadFragment(fragment: Fragment) {

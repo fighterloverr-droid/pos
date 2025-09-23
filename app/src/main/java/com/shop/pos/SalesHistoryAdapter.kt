@@ -4,91 +4,102 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import java.text.NumberFormat
 import java.util.Locale
 
-interface SaleHistoryItemListener {
-    fun onCancelSale(position: Int)
-    fun onMarkAsPaid(position: Int)
-}
+private const val VIEW_TYPE_HEADER = 0
+private const val VIEW_TYPE_ITEM = 1
 
 class SalesHistoryAdapter(
-    private var records: List<SaleRecord>,
+    private var items: List<SalesHistoryListItem>,
     private val listener: SaleHistoryItemListener
-) : RecyclerView.Adapter<SalesHistoryAdapter.ViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        // Updated Views
+        val rootLayout: LinearLayout = itemView.findViewById(R.id.rootLayout)
         val customerName: TextView = itemView.findViewById(R.id.textViewCustomerName)
         val saleDate: TextView = itemView.findViewById(R.id.textViewSaleDate)
         val totalAmount: TextView = itemView.findViewById(R.id.textViewTotalAmount)
+        val editButton: ImageButton = itemView.findViewById(R.id.buttonEditSale)
         val cancelButton: ImageButton = itemView.findViewById(R.id.buttonCancelSale)
         val paymentStatus: TextView = itemView.findViewById(R.id.textViewPaymentStatus)
-        val markAsPaidButton: Button = itemView.findViewById(R.id.buttonMarkAsPaid)
         val deliveryStatus: TextView = itemView.findViewById(R.id.textViewDeliveryStatus)
+    }
 
-        init {
-            cancelButton.setOnClickListener { listener.onCancelSale(adapterPosition) }
-            markAsPaidButton.setOnClickListener { listener.onMarkAsPaid(adapterPosition) }
+    class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val dateHeader: TextView = itemView.findViewById(R.id.textViewDateHeader)
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return when (items[position]) {
+            is SalesHistoryListItem.DateHeader -> VIEW_TYPE_HEADER
+            is SalesHistoryListItem.SaleItem -> VIEW_TYPE_ITEM
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_sale_record, parent, false)
-        return ViewHolder(view)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == VIEW_TYPE_HEADER) {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_date_header, parent, false)
+            HeaderViewHolder(view)
+        } else {
+            val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_sale_record, parent, false)
+            ItemViewHolder(view)
+        }
     }
 
     override fun getItemCount(): Int {
-        return records.size
+        return items.size
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val currentRecord = records[position]
-        val numberFormat = NumberFormat.getNumberInstance(Locale.US)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val currentItem = items[position]) {
+            is SalesHistoryListItem.DateHeader -> {
+                (holder as HeaderViewHolder).dateHeader.text = currentItem.date
+            }
+            is SalesHistoryListItem.SaleItem -> {
+                val itemHolder = holder as ItemViewHolder
+                val record = currentItem.saleRecord
+                val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
-        holder.customerName.text = currentRecord.customerName.ifEmpty { "Cash Sale" }
-        holder.saleDate.text = currentRecord.saleDate
-        holder.totalAmount.text = "${numberFormat.format(currentRecord.totalAmount.toInt())} Ks"
+                itemHolder.customerName.text = record.customerName.ifEmpty { "Cash Sale" }
+                itemHolder.saleDate.text = record.saleDate
+                itemHolder.totalAmount.text = "${numberFormat.format(record.totalAmount.toInt())} Ks"
 
-        // Payment Status Logic
-        holder.paymentStatus.text = currentRecord.paymentStatus
-        when (currentRecord.paymentStatus) {
-            "ငွေရပြီး" -> {
-                holder.paymentStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
-                holder.markAsPaidButton.visibility = View.GONE
-            }
-            "COD" -> {
-                holder.paymentStatus.setTextColor(Color.parseColor("#2196F3")) // Blue
-                holder.markAsPaidButton.visibility = View.VISIBLE
-            }
-            "အကြွေး" -> {
-                holder.paymentStatus.setTextColor(Color.parseColor("#F44336")) // Red
-                holder.markAsPaidButton.visibility = View.GONE
-            }
-            else -> {
-                holder.paymentStatus.setTextColor(Color.GRAY)
-            }
-        }
+                itemHolder.paymentStatus.text = record.paymentStatus
+                when (record.paymentStatus) {
+                    "ငွေရပြီး" -> itemHolder.paymentStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
+                    "COD" -> itemHolder.paymentStatus.setTextColor(Color.parseColor("#2196F3")) // Blue
+                    "အကြွေး" -> itemHolder.paymentStatus.setTextColor(Color.parseColor("#F44336")) // Red
+                    else -> itemHolder.paymentStatus.setTextColor(Color.GRAY)
+                }
 
-        // Delivery Status Logic
-        if (currentRecord.isDelivered) {
-            holder.deliveryStatus.text = "(ပို့ဆောင်ပြီး)"
-            holder.deliveryStatus.setTextColor(Color.parseColor("#4CAF50")) // Green
-        } else {
-            holder.deliveryStatus.text = "(မပို့ရသေးပါ)"
-            holder.deliveryStatus.setTextColor(Color.GRAY)
+                if (record.isDelivered) {
+                    itemHolder.deliveryStatus.text = "(ပို့ဆောင်ပြီး)"
+                    itemHolder.deliveryStatus.setTextColor(Color.parseColor("#4CAF50"))
+                } else {
+                    itemHolder.deliveryStatus.text = "(မပို့ရသေးပါ)"
+                    itemHolder.deliveryStatus.setTextColor(Color.GRAY)
+                }
+
+                // --- Updated Click Listeners ---
+                itemHolder.rootLayout.setOnClickListener { listener.onSaleRecordClick(record) }
+                itemHolder.editButton.setOnClickListener { listener.onEditSale(record) }
+                itemHolder.cancelButton.setOnClickListener { listener.onCancelSale(record) }
+            }
         }
     }
 
-    fun updateList(newList: List<SaleRecord>) {
-        records = newList
+    fun updateList(newList: List<SalesHistoryListItem>) {
+        items = newList
         notifyDataSetChanged()
     }
 
-    fun getRecordAt(position: Int): SaleRecord {
-        return records[position]
+    fun getRecordAt(position: Int) : SaleRecord? {
+        return (items[position] as? SalesHistoryListItem.SaleItem)?.saleRecord
     }
 }

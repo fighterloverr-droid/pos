@@ -130,6 +130,13 @@ class VoucherActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionAndSave() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10 (Q) နှင့် အထက်အတွက် permission တောင်းစရာမလိုပါ
+            saveVoucher()
+            return
+        }
+
+        // Android 9 (Pie) နှင့် အောက်အတွက် permission စစ်ဆေးပါ
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
         } else {
@@ -141,6 +148,8 @@ class VoucherActivity : AppCompatActivity() {
         val bitmap = getBitmapFromView(voucherLayout)
         if (bitmap != null) {
             saveBitmapToGallery(bitmap)
+        } else {
+            Toast.makeText(this, "Failed to create voucher image.", Toast.LENGTH_SHORT).show()
         }
     }
 

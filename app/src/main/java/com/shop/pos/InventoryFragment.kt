@@ -70,7 +70,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
 
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
-        val editTextItemCode = dialogView.findViewById<EditText>(R.id.editTextItemCode) // <-- အသစ်
+        val editTextItemCode = dialogView.findViewById<EditText>(R.id.editTextItemCode)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
         val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
@@ -83,7 +83,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
         if (isEditing) {
             val item = inventoryItems[position]
             editTextItemName.setText(item.name)
-            editTextItemCode.setText(item.code) // <-- အသစ်
+            editTextItemCode.setText(item.code)
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
             editTextCostPrice.setText(item.costPrice.toString())
@@ -95,15 +95,14 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             .setView(dialogView)
             .setPositiveButton("သိမ်းမည်") { dialog, _ ->
                 val name = editTextItemName.text.toString()
-                val code = editTextItemCode.text.toString() // <-- အသစ်
+                val code = editTextItemCode.text.toString()
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
                 val costPriceStr = editTextCostPrice.text.toString()
                 val isForSale = switchForSale.isChecked
 
-                if (name.isNotEmpty() && code.isNotEmpty() &&
-                    quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()
-                ) {
+                // code အကွက်ကလွဲပြီး ကျန်တဲ့အကွက်တွေ ပြည့်စုံရင် save ခွင့်ပြုပါ
+                if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
                     val price = priceStr.toDouble()
                     val costPrice = costPriceStr.toDouble()
 
@@ -112,7 +111,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                             val oldItem = inventoryItems[position]
                             val updatedItem = oldItem.copy(
                                 name = name,
-                                code = code, // <-- အသစ်
+                                code = code, // code က အလွတ်ဖြစ်ချင်ဖြစ်နေပါမယ်
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
@@ -122,7 +121,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                         } else {
                             val newItem = InventoryItem(
                                 name = name,
-                                code = code, // <-- အသစ်
+                                code = code, // code က အလွတ်ဖြစ်ချင်ဖြစ်နေပါမယ်
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
