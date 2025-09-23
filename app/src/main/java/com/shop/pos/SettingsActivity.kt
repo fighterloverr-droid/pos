@@ -27,21 +27,26 @@ import java.io.FileOutputStream
 
 class SettingsActivity : AppCompatActivity() {
 
-    // Shop Info
+    // --- Shop Info ---
     private lateinit var editTextShopName: EditText
     private lateinit var editTextShopAddress: EditText
     private lateinit var editTextShopPhone: EditText
     private lateinit var buttonSaveShopInfo: Button
 
-    // Security
+    // --- Security ---
     private lateinit var switchPinLock: SwitchMaterial
     private lateinit var textViewChangePin: TextView
 
-    // Data Management
+    // --- Data Management ---
     private lateinit var buttonBackupData: Button
     private lateinit var buttonRestoreData: Button
     private lateinit var buttonExportSales: Button
     private lateinit var buttonExportInventory: Button
+
+    // --- Printer Settings ---
+    private lateinit var editTextChars58mm: EditText
+    private lateinit var editTextChars80mm: EditText
+    private lateinit var buttonSavePrinterInfo: Button
 
     // Permission code
     private val STORAGE_PERMISSION_CODE = 101
@@ -51,13 +56,14 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var inventoryRepository: InventoryRepository
 
     // File picker launcher
-    private val restoreLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.also { uri ->
-                restoreDatabaseFromUri(uri)
+    private val restoreLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.also { uri ->
+                    restoreDatabaseFromUri(uri)
+                }
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,36 +88,54 @@ class SettingsActivity : AppCompatActivity() {
         buttonExportSales = findViewById(R.id.buttonExportSales)
         buttonExportInventory = findViewById(R.id.buttonExportInventory)
 
+        // --- Printer Settings UI ---
+        editTextChars58mm = findViewById(R.id.editTextChars58mm)
+        editTextChars80mm = findViewById(R.id.editTextChars80mm)
+        buttonSavePrinterInfo = findViewById(R.id.buttonSavePrinterInfo)
+
         loadSettings()
         setupListeners()
     }
 
     private fun setupListeners() {
+        // Shop info
         buttonSaveShopInfo.setOnClickListener { saveShopInfo() }
+
+        // Security
         switchPinLock.setOnCheckedChangeListener { _, isChecked ->
             PinManager.setPinEnabled(this, isChecked)
             val status = if (isChecked) "ဖွင့်လိုက်ပါပြီ" else "ပိတ်လိုက်ပါပြီ"
             Toast.makeText(this, "PIN Lock ကို $status", Toast.LENGTH_SHORT).show()
         }
         textViewChangePin.setOnClickListener { showChangePinDialog() }
+
+        // Data Management
         buttonBackupData.setOnClickListener { checkPermissionAndBackup() }
         buttonRestoreData.setOnClickListener { showRestoreConfirmationDialog() }
 
-        // --- Export Listeners ---
         buttonExportSales.setOnClickListener {
             checkPermissionAndExport { exportSalesToCsv() }
         }
         buttonExportInventory.setOnClickListener {
             checkPermissionAndExport { exportInventoryToCsv() }
         }
+
+        // Printer Settings
+        buttonSavePrinterInfo.setOnClickListener { savePrinterInfo() }
     }
 
     private fun loadSettings() {
+        // Shop Info
         val prefs = getSharedPreferences("ShopInfoPrefs", Context.MODE_PRIVATE)
         editTextShopName.setText(prefs.getString("SHOP_NAME", ""))
         editTextShopAddress.setText(prefs.getString("SHOP_ADDRESS", ""))
         editTextShopPhone.setText(prefs.getString("SHOP_PHONE", ""))
         switchPinLock.isChecked = PinManager.isPinEnabled(this)
+
+        // Printer Settings
+        val printerPrefs = getSharedPreferences("PrinterPrefs", Context.MODE_PRIVATE)
+        editTextChars58mm.setText(printerPrefs.getInt("CHARS_58MM", 32).toString())
+        editTextChars80mm.setText(printerPrefs.getInt("CHARS_80MM", 48).toString())
     }
 
     private fun saveShopInfo() {
@@ -123,11 +147,22 @@ class SettingsActivity : AppCompatActivity() {
         Toast.makeText(this, "ဆိုင်အချက်အလက်များ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
     }
 
+    private fun savePrinterInfo() {
+        val printerPrefs = getSharedPreferences("PrinterPrefs", Context.MODE_PRIVATE).edit()
+        val chars58 = editTextChars58mm.text.toString().toIntOrNull() ?: 32
+        val chars80 = editTextChars80mm.text.toString().toIntOrNull() ?: 48
+        printerPrefs.putInt("CHARS_58MM", chars58)
+        printerPrefs.putInt("CHARS_80MM", chars80)
+        printerPrefs.apply()
+        Toast.makeText(this, "Printer settings saved", Toast.LENGTH_SHORT).show()
+    }
+
     private fun showChangePinDialog() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("PIN နံပါတ် အသစ် ထည့်သွင်းပါ")
         val input = EditText(this)
-        input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        input.inputType =
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
         input.hint = "ဂဏန်း ၄ လုံး ထည့်ပါ"
         builder.setView(input)
         builder.setPositiveButton("သိမ်းမည်") { dialog, _ ->
@@ -146,14 +181,26 @@ class SettingsActivity : AppCompatActivity() {
 
     // --- Backup/Restore ---
     private fun checkPermissionAndBackup() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_DENIED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                STORAGE_PERMISSION_CODE
+            )
         } else {
             backupDatabase()
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -171,7 +218,10 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, "Database not found!", Toast.LENGTH_SHORT).show()
                 return
             }
-            val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "PosBackup")
+            val backupDir = File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "PosBackup"
+            )
             if (!backupDir.exists()) backupDir.mkdirs()
             val backupFile = File(backupDir, "pos_backup.db")
             FileInputStream(dbFile).channel.use { source ->
@@ -234,8 +284,16 @@ class SettingsActivity : AppCompatActivity() {
 
     // --- Export to CSV ---
     private fun checkPermissionAndExport(exportAction: () -> Unit) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), STORAGE_PERMISSION_CODE)
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_DENIED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                STORAGE_PERMISSION_CODE
+            )
         } else {
             exportAction()
         }
@@ -250,11 +308,15 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 return@launch
             }
-            val csvHeader = "Date,Customer,Phone,Address,Items,Subtotal,Discount,Delivery,Total,PaymentType,PaymentStatus,IsDelivered\n"
+            val csvHeader =
+                "Date,Customer,Phone,Address,Items,Subtotal,Discount,Delivery,Total,PaymentType,PaymentStatus,IsDelivered\n"
             val sb = StringBuilder().append(csvHeader)
             salesRecords.forEach { record ->
-                val itemsString = record.items.joinToString(" | ") { "${it.name}(${it.quantity})" }.replace(",", ";")
-                sb.append("\"${record.saleDate}\",\"${record.customerName}\",\"${record.customerPhone}\",\"${record.customerAddress}\",\"$itemsString\",${record.subtotal},${record.discount},${record.deliveryFee},${record.totalAmount},\"${record.paymentType}\",\"${record.paymentStatus}\",${record.isDelivered}\n")
+                val itemsString = record.items.joinToString(" | ") { "${it.name}(${it.quantity})" }
+                    .replace(",", ";")
+                sb.append(
+                    "\"${record.saleDate}\",\"${record.customerName}\",\"${record.customerPhone}\",\"${record.customerAddress}\",\"$itemsString\",${record.subtotal},${record.discount},${record.deliveryFee},${record.totalAmount},\"${record.paymentType}\",\"${record.paymentStatus}\",${record.isDelivered}\n"
+                )
             }
             saveCsvToFile("sales_export.csv", sb.toString())
         }
@@ -280,7 +342,8 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun saveCsvToFile(fileName: String, content: String) {
         try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val file = File(downloadsDir, fileName)
             FileOutputStream(file).use { it.write(content.toByteArray()) }
             runOnUiThread {

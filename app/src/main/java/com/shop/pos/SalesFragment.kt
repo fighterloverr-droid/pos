@@ -5,13 +5,19 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,11 +25,11 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class SalesFragment : Fragment(), SalesItemListener {
 
-    // UI Components
     private lateinit var editTextCustomerAddress: EditText
     private lateinit var editTextDiscount: EditText
     private lateinit var editTextDeliveryFee: EditText
@@ -41,11 +47,9 @@ class SalesFragment : Fragment(), SalesItemListener {
     private lateinit var buttonViewSalesHistory: Button
     private lateinit var buttonScanCode: ImageButton
 
-    // Data & Repositories
     private val salesItems = mutableListOf<SaleItem>()
     private lateinit var inventoryRepository: InventoryRepository
     private lateinit var salesRepository: SalesRepository
-    private var editingSaleId = -1
 
     private val scannerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -56,10 +60,7 @@ class SalesFragment : Fragment(), SalesItemListener {
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_sales, container, false)
     }
 
@@ -70,10 +71,6 @@ class SalesFragment : Fragment(), SalesItemListener {
         inventoryRepository = InventoryRepository(app.database.inventoryDao())
         salesRepository = SalesRepository(app.database.salesDao())
 
-        arguments?.let {
-            editingSaleId = it.getInt("EDIT_SALE_ID", -1)
-        }
-
         bindViews(view)
 
         salesAdapter = SalesAdapter(salesItems, this)
@@ -81,141 +78,8 @@ class SalesFragment : Fragment(), SalesItemListener {
         salesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
         setupListeners()
-
-        if (editingSaleId != -1) {
-            buttonConfirmSale.text = "Update Sale"
-            loadSaleForEditing()
-        } else {
-            buttonConfirmSale.text = "Confirm Sale"
-            updateSummary()
-        }
+        updateSummary()
     }
-
-    private fun loadSaleForEditing() {
-        lifecycleScope.launch {
-            val saleRecord = salesRepository.getSaleById(editingSaleId)
-            if (saleRecord != null) {
-                // အရေးကြီး: Edit မလုပ်ခင် stock တွေကို ယာယီပြန်ပေါင်းထည့်ပါ
-                inventoryRepository.addStockFromCancelledSale(saleRecord.items)
-
-                // UI မှာ data တွေ ပြန်ဖြည့်ပါ
-                editTextCustomerName.setText(saleRecord.customerName)
-                editTextCustomerPhone.setText(saleRecord.customerPhone)
-                editTextCustomerAddress.setText(saleRecord.customerAddress)
-                editTextDiscount.setText(if (saleRecord.discount > 0) saleRecord.discount.toInt().toString() else "")
-                editTextDeliveryFee.setText(if (saleRecord.deliveryFee > 0) saleRecord.deliveryFee.toInt().toString() else "")
-
-                when (saleRecord.paymentType) {
-                    "COD" -> radioGroupPayment.check(R.id.radioButtonCod)
-                    "အကြွေး" -> radioGroupPayment.check(R.id.radioButtonCredit)
-                    else -> radioGroupPayment.check(R.id.radioButtonPaid)
-                }
-
-                switchDelivered.isChecked = saleRecord.isDelivered
-                salesItems.clear()
-                salesItems.addAll(saleRecord.items)
-                salesAdapter.notifyDataSetChanged()
-                updateSummary()
-            }
-        }
-    }
-
-    private fun confirmSale() {
-        if (salesItems.isEmpty()) {
-            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        lifecycleScope.launch {
-            // ပစ္စည်းအရေအတွက် အသစ်များဖြင့် stock ကို နုတ်ပါ
-            val isStockAvailable = inventoryRepository.deductStockFromSale(salesItems)
-            if (!isStockAvailable) {
-                activity?.runOnUiThread {
-                    Toast.makeText(requireContext(), "ပစ္စည်းလက်ကျန်မလုံလောက်ပါ!", Toast.LENGTH_LONG).show()
-                }
-
-                // အရေးကြီး: Stock မလောက်ပါက Edit Mode ဝင်စဉ်က ယာယီပြန်ပေါင်းထားသော stock ကို ပြန်နုတ်ပြီး မူလအခြေအနေအတိုင်းပြန်ထားပါ
-                if (editingSaleId != -1) {
-                    val originalRecord = salesRepository.getSaleById(editingSaleId)
-                    if (originalRecord != null) {
-                        inventoryRepository.deductStockFromSale(originalRecord.items)
-                    }
-                }
-                return@launch
-            }
-
-            // UI မှ data များကို SaleRecord object အဖြစ် ပြောင်းပါ
-            val customerName = editTextCustomerName.text.toString()
-            val customerPhone = editTextCustomerPhone.text.toString()
-            val customerAddress = editTextCustomerAddress.text.toString()
-            val subtotal = salesItems.sumOf { it.quantity * it.price }
-            val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
-            val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
-            val totalAmount = subtotal - discount + deliveryFee
-            val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
-            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString() ?: "N/A"
-            val isDelivered = switchDelivered.isChecked
-            val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
-            val currentDate = sdf.format(Date())
-
-            // Mode အလိုက် Add သို့မဟုတ် Update လုပ်ပါ
-            if (editingSaleId != -1) {
-                // --- Edit Mode ---
-                val updatedRecord = SaleRecord(
-                    id = editingSaleId, // ID အဟောင်းကို သုံးပါ
-                    customerName = customerName,
-                    customerPhone = customerPhone,
-                    customerAddress = customerAddress,
-                    items = salesItems.toList(),
-                    subtotal = subtotal,
-                    discount = discount,
-                    deliveryFee = deliveryFee,
-                    totalAmount = totalAmount,
-                    paymentType = paymentType,
-                    paymentStatus = paymentType, // You might need different logic here
-                    isDelivered = isDelivered,
-                    saleDate = currentDate
-                )
-                salesRepository.updateSaleRecord(updatedRecord)
-            } else {
-                // --- Add Mode ---
-                val newRecord = SaleRecord(
-                    customerName = customerName,
-                    customerPhone = customerPhone,
-                    customerAddress = customerAddress,
-                    items = salesItems.toList(),
-                    subtotal = subtotal,
-                    discount = discount,
-                    deliveryFee = deliveryFee,
-                    totalAmount = totalAmount,
-                    paymentType = paymentType,
-                    paymentStatus = paymentType,
-                    isDelivered = isDelivered,
-                    saleDate = currentDate
-                )
-                salesRepository.addSaleRecord(newRecord)
-            }
-
-            activity?.runOnUiThread {
-                Toast.makeText(requireContext(), if(editingSaleId != -1) "ပြင်ဆင်ပြီးပါပြီ" else "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
-                if (editingSaleId != -1) {
-                    // Edit ပြီးရင် Sales History ကို ပြန်သွားပါ
-                    val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-                    startActivity(intent)
-                    requireActivity().finish()
-                } else {
-                    // Add ပြီးရင် form ကို ရှင်းလင်းပါ (Voucher ကိုသွားလိုက comment ဖြုတ်ပါ)
-                    clearSale()
-//                    val intent = Intent(requireContext(), VoucherActivity::class.java)
-//                    intent.putExtra("EXTRA_SALE_RECORD", newRecord)
-//                    startActivity(intent)
-                }
-            }
-        }
-    }
-
-    // --- Other Helper and Listener Functions ---
 
     private fun bindViews(view: View) {
         salesRecyclerView = view.findViewById(R.id.recyclerViewSalesItems)
@@ -239,15 +103,11 @@ class SalesFragment : Fragment(), SalesItemListener {
         buttonAddItem.setOnClickListener { showProductSelectionDialog() }
         buttonCancel.setOnClickListener { clearSale() }
         buttonConfirmSale.setOnClickListener { confirmSale() }
-
         buttonViewSalesHistory.setOnClickListener {
             val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
             startActivity(intent)
         }
-
-        buttonScanCode.setOnClickListener {
-            showScannerSelectionDialog()
-        }
+        buttonScanCode.setOnClickListener { showScannerSelectionDialog() }
 
         val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -258,26 +118,6 @@ class SalesFragment : Fragment(), SalesItemListener {
         }
         editTextDiscount.addTextChangedListener(textWatcher)
         editTextDeliveryFee.addTextChangedListener(textWatcher)
-    }
-
-    private fun showScannerSelectionDialog() {
-        val options = arrayOf("Scan Code (OCR)", "Scan Barcode")
-        AlertDialog.Builder(requireContext())
-            .setTitle("Select Scanner Type")
-            .setItems(options) { dialog, which ->
-                when (which) {
-                    0 -> { // OCR Scanner
-                        val intent = Intent(requireContext(), ScannerActivity::class.java)
-                        scannerLauncher.launch(intent)
-                    }
-                    1 -> { // Barcode Scanner
-                        val intent = Intent(requireContext(), BarcodeScannerActivity::class.java)
-                        scannerLauncher.launch(intent)
-                    }
-                }
-                dialog.dismiss()
-            }
-            .show()
     }
 
     private fun updateSummary() {
@@ -291,14 +131,6 @@ class SalesFragment : Fragment(), SalesItemListener {
     }
 
     private fun clearSale() {
-        if (editingSaleId != -1) {
-            val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-            startActivity(intent)
-            requireActivity().finish()
-            return
-        }
-
         val itemCount = salesItems.size
         if (itemCount > 0) {
             salesItems.clear()
@@ -327,7 +159,6 @@ class SalesFragment : Fragment(), SalesItemListener {
                 .setItems(itemNames) { dialog, which ->
                     val selectedItem = inventory[which]
                     val existingItemInCart = salesItems.find { it.name == selectedItem.name }
-
                     if (existingItemInCart != null) {
                         val index = salesItems.indexOf(existingItemInCart)
                         onIncreaseQuantity(index)
@@ -349,32 +180,98 @@ class SalesFragment : Fragment(), SalesItemListener {
         }
     }
 
+    private fun showScannerSelectionDialog() {
+        val options = arrayOf("Scan Code (OCR)", "Scan Barcode")
+        AlertDialog.Builder(requireContext())
+            .setTitle("Select Scanner Type")
+            .setItems(options) { dialog, which ->
+                val intent = when (which) {
+                    0 -> Intent(requireContext(), ScannerActivity::class.java)
+                    1 -> Intent(requireContext(), BarcodeScannerActivity::class.java)
+                    else -> return@setItems
+                }
+                scannerLauncher.launch(intent)
+                dialog.dismiss()
+            }
+            .show()
+    }
+
     private fun findAndAddItemByCode(code: String) {
         lifecycleScope.launch {
             val itemFromDb = inventoryRepository.findItemByCode(code)
-
             if (itemFromDb != null) {
-                activity?.runOnUiThread {
-                    val existingItemInCart = salesItems.find { it.name == itemFromDb.name }
-                    if (existingItemInCart != null) {
-                        val index = salesItems.indexOf(existingItemInCart)
-                        onIncreaseQuantity(index)
-                    } else {
-                        val newItem = SaleItem(
-                            name = itemFromDb.name,
-                            quantity = 1,
-                            price = itemFromDb.price,
-                            costPrice = itemFromDb.costPrice
-                        )
-                        salesItems.add(newItem)
-                        salesAdapter.notifyItemInserted(salesItems.size - 1)
-                    }
-                    updateSummary()
+                val existingItemInCart = salesItems.find { it.name == itemFromDb.name }
+                if (existingItemInCart != null) {
+                    val index = salesItems.indexOf(existingItemInCart)
+                    onIncreaseQuantity(index)
+                } else {
+                    val newItem = SaleItem(
+                        name = itemFromDb.name,
+                        quantity = 1,
+                        price = itemFromDb.price,
+                        costPrice = itemFromDb.costPrice
+                    )
+                    salesItems.add(newItem)
+                    salesAdapter.notifyItemInserted(salesItems.size - 1)
                 }
+                updateSummary()
             } else {
+                Toast.makeText(requireContext(), "Code '$code' not found in inventory", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun confirmSale() {
+        if (salesItems.isEmpty()) {
+            Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            val isStockAvailable = inventoryRepository.deductStockFromSale(salesItems)
+            if (!isStockAvailable) {
                 activity?.runOnUiThread {
-                    Toast.makeText(requireContext(), "'$code' code နှင့် ပစ္စည်းမရှိပါ", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "ပစ္စည်းလက်ကျန်မလုံလောက်ပါ!", Toast.LENGTH_LONG).show()
                 }
+                return@launch
+            }
+
+            val customerName = editTextCustomerName.text.toString()
+            val customerPhone = editTextCustomerPhone.text.toString()
+            val customerAddress = editTextCustomerAddress.text.toString()
+            val subtotal = salesItems.sumOf { it.quantity * it.price }
+            val discount = editTextDiscount.text.toString().toDoubleOrNull() ?: 0.0
+            val deliveryFee = editTextDeliveryFee.text.toString().toDoubleOrNull() ?: 0.0
+            val totalAmount = subtotal - discount + deliveryFee
+            val selectedPaymentId = radioGroupPayment.checkedRadioButtonId
+            val paymentType = view?.findViewById<RadioButton>(selectedPaymentId)?.text.toString() ?: "N/A"
+            val isDelivered = switchDelivered.isChecked
+            val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+            val currentDate = sdf.format(Date())
+
+            val saleRecord = SaleRecord(
+                customerName = customerName,
+                customerPhone = customerPhone,
+                customerAddress = customerAddress,
+                items = salesItems.toList(),
+                subtotal = subtotal,
+                discount = discount,
+                deliveryFee = deliveryFee,
+                totalAmount = totalAmount,
+                paymentType = paymentType,
+                paymentStatus = paymentType,
+                isDelivered = isDelivered,
+                saleDate = currentDate
+            )
+
+            salesRepository.addSaleRecord(saleRecord)
+
+            activity?.runOnUiThread {
+                Toast.makeText(requireContext(), "အရောင်း အောင်မြင်ပါသည်", Toast.LENGTH_LONG).show()
+                val intent = Intent(requireContext(), VoucherActivity::class.java)
+                intent.putExtra("EXTRA_SALE_RECORD", saleRecord)
+                startActivity(intent)
+                clearSale()
             }
         }
     }
@@ -396,11 +293,11 @@ class SalesFragment : Fragment(), SalesItemListener {
         val item = salesItems[position]
         if (item.quantity > 1) {
             salesItems[position] = item.copy(quantity = item.quantity - 1)
+            salesAdapter.notifyItemChanged(position)
         } else {
             salesItems.removeAt(position)
             salesAdapter.notifyItemRemoved(position)
         }
-        salesAdapter.notifyItemChanged(position)
         updateSummary()
     }
 }

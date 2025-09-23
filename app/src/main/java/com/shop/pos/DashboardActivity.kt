@@ -29,27 +29,28 @@ class DashboardActivity : AppCompatActivity() {
         bottomNav.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.navigation_dashboard -> {
-                    titleTextView.text = "Dashboard"
+                    // getString() ကို အသုံးပြုပြီး strings.xml ထဲက စာသားကို ခေါ်သုံးပါ
+                    titleTextView.text = getString(R.string.title_dashboard)
                     loadFragment(DashboardFragment())
                     true
                 }
                 R.id.navigation_sales -> {
-                    titleTextView.text = "Sales"
+                    titleTextView.text = getString(R.string.title_sales)
                     loadFragment(SalesFragment())
                     true
                 }
                 R.id.navigation_inventory -> {
-                    titleTextView.text = "Inventory"
+                    titleTextView.text = getString(R.string.title_inventory)
                     loadFragment(InventoryFragment())
                     true
                 }
                 R.id.navigation_purchases -> {
-                    titleTextView.text = "Purchases"
+                    titleTextView.text = getString(R.string.title_purchases)
                     loadFragment(PurchasesFragment())
                     true
                 }
                 R.id.navigation_expenses -> {
-                    titleTextView.text = "Expenses"
+                    titleTextView.text = getString(R.string.title_expenses)
                     loadFragment(ExpensesFragment())
                     true
                 }
@@ -58,9 +59,7 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         if (savedInstanceState == null) {
-            // Check for extras from intent first
             if (!handleIntentExtras(intent)) {
-                // If no extras, load default fragment
                 bottomNav.selectedItemId = R.id.navigation_dashboard
             }
         }
@@ -84,11 +83,11 @@ class DashboardActivity : AppCompatActivity() {
                     }
                     loadFragment(salesFragment)
                     bottomNav.selectedItemId = R.id.navigation_sales
-                    return true // Handled
+                    return true
                 }
             }
         }
-        return false // Not handled
+        return false
     }
 
     private fun loadFragment(fragment: Fragment) {
@@ -97,3 +96,4 @@ class DashboardActivity : AppCompatActivity() {
             .commit()
     }
 }
+

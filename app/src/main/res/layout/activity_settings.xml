@@ -11,6 +11,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Toolbar -->
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -19,7 +20,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:navigationIcon="@drawable/ic_arrow_back"
-                app:title="Settings" />
+                app:title="@string/title_settings" />
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout
@@ -28,6 +29,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Shop Info Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -68,6 +70,7 @@
                 android:text="သိမ်းဆည်းမည်"/>
 
 
+            <!-- Security Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -96,6 +99,7 @@
                 android:clickable="true"
                 android:focusable="true"/>
 
+            <!-- Data Management Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -136,6 +140,40 @@
                 android:layout_marginTop="8dp"
                 android:text="ပစ္စည်းစာရင်း Export ထုတ်ရန် (CSV)" />
 
+            <!-- Printer Settings Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Printer Settings"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/editTextChars58mm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Characters per line for 58mm"
+                android:inputType="number" />
+
+            <EditText
+                android:id="@+id/editTextChars80mm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Characters per line for 80mm"
+                android:inputType="number" />
+
+            <Button
+                android:id="@+id/buttonSavePrinterInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Save Printer Settings"/>
+
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
+

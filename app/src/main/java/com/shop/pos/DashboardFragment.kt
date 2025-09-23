@@ -18,10 +18,13 @@ import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.utils.ColorTemplate
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.TreeMap
 
 class DashboardFragment : Fragment() {
@@ -31,10 +34,9 @@ class DashboardFragment : Fragment() {
     private lateinit var purchasesRepository: PurchasesRepository
     private lateinit var salesRepository: SalesRepository
     private lateinit var expensesRepository: ExpensesRepository
-
     private lateinit var barChart: BarChart
     private lateinit var pieChart: PieChart
-    private lateinit var lineChart: LineChart // LineChart variable အသစ်
+    private lateinit var lineChart: LineChart
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -80,10 +82,10 @@ class DashboardFragment : Fragment() {
 
             val totalSales = salesRepository.getTotalSales() ?: 0.0
             val totalExpenses = expensesRepository.getTotalExpenses() ?: 0.0
-            val totalPurchases = purchasesRepository.getTotalPurchases() ?: 0.0
             val totalInventoryValue = inventoryRepository.getTotalInventoryValue()
+            val totalCOGS = salesRepository.getTotalCostOfGoodsSold() ?: 0.0
 
-            val grossProfit = totalSales
+            val grossProfit = totalSales - totalCOGS
             val netProfit = grossProfit - totalExpenses
             val operatingCash = totalInventoryValue + netProfit
 
@@ -109,7 +111,7 @@ class DashboardFragment : Fragment() {
 
             setupMetricCard(
                 cardId = R.id.cardGrossProfit,
-                title = "အမြတ်ငွေ (စုစုပေါင်း ရောင်းရငွေ)",
+                title = "အမြတ်ငွေ (Gross Profit)",
                 value = "${numberFormat.format(grossProfit.toInt())} Ks"
             )
         }
@@ -139,32 +141,32 @@ class DashboardFragment : Fragment() {
         lifecycleScope.launch {
             val salesRecords = salesRepository.getSaleRecords()
 
-            val salesByDate = mutableMapOf<String, Float>()
-            val sdf = SimpleDateFormat("dd-MMM", Locale.getDefault())
+            val salesByDate = TreeMap<String, Float>()
+            val displayFormat = SimpleDateFormat("dd-MMM", Locale.getDefault())
+            val parseFormat = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
 
             val sevenDaysAgo = Calendar.getInstance()
             sevenDaysAgo.add(Calendar.DAY_OF_YEAR, -7)
 
-            salesRecords.filter {
-                val recordDate =
-                    SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it.saleDate)
-                recordDate != null && recordDate.after(sevenDaysAgo.time)
-            }.forEach { record ->
-                val dayKey =
-                    sdf.format(SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(record.saleDate) ?: Date())
-                salesByDate[dayKey] =
-                    (salesByDate[dayKey] ?: 0f) + record.totalAmount.toFloat()
+            salesRecords.forEach { record ->
+                try {
+                    val recordDate = parseFormat.parse(record.saleDate)
+                    if (recordDate != null && recordDate.after(sevenDaysAgo.time)) {
+                        val dayKey = displayFormat.format(recordDate)
+                        salesByDate[dayKey] = (salesByDate[dayKey] ?: 0f) + record.totalAmount.toFloat()
+                    }
+                } catch (e: Exception) {
+                    // Ignore malformed dates
+                }
             }
 
             val entries = ArrayList<BarEntry>()
-            val labels = ArrayList<String>()
-            var index = 0f
+            val labels = ArrayList(salesByDate.keys)
 
-            salesByDate.toSortedMap().forEach { (date, total) ->
-                entries.add(BarEntry(index, total))
-                labels.add(date)
-                index++
+            labels.forEachIndexed { index, _ ->
+                entries.add(BarEntry(index.toFloat(), salesByDate[labels[index]] ?: 0f))
             }
+
 
             if (entries.isEmpty()) {
                 barChart.visibility = View.GONE
@@ -173,7 +175,7 @@ class DashboardFragment : Fragment() {
 
             barChart.visibility = View.VISIBLE
             val dataSet = BarDataSet(entries, "Daily Sales")
-            dataSet.color = Color.parseColor("#6750A4")
+            dataSet.color = ContextCompat.getColor(requireContext(), R.color.primary_teal)
 
             val barData = BarData(dataSet)
             barData.barWidth = 0.5f
@@ -191,6 +193,7 @@ class DashboardFragment : Fragment() {
             barChart.invalidate()
         }
     }
+
 
     private fun setupExpensesPieChart() {
         lifecycleScope.launch {
@@ -226,35 +229,22 @@ class DashboardFragment : Fragment() {
                 entries.add(PieEntry(total, category))
             }
 
-            val dataSet = PieDataSet(entries, "Monthly Expenses")
-            dataSet.colors = listOf(
-                Color.parseColor("#F44336"),
-                Color.parseColor("#2196F3"),
-                Color.parseColor("#4CAF50"),
-                Color.parseColor("#FF9800"),
-                Color.parseColor("#9C27B0")
-            )
+            val dataSet = PieDataSet(entries, "Expenses")
+            dataSet.colors = ColorTemplate.MATERIAL_COLORS.toList() + ColorTemplate.VORDIPLOM_COLORS.toList()
             dataSet.sliceSpace = 2f
             dataSet.valueTextSize = 12f
-            dataSet.valueTextColor = Color.WHITE
+            dataSet.valueTextColor = Color.BLACK
 
             val pieData = PieData(dataSet)
-
             pieChart.data = pieData
-            pieChart.setUsePercentValues(true)
             pieChart.description.isEnabled = false
             pieChart.isDrawHoleEnabled = true
             pieChart.setEntryLabelColor(Color.BLACK)
-            pieChart.setEntryLabelTextSize(12f)
-            pieChart.legend.isEnabled = true
-
+            pieChart.animateY(1000)
             pieChart.invalidate()
         }
     }
 
-    /**
-     * Line Chart - Monthly Sales
-     */
     private fun setupSalesLineChart() {
         lifecycleScope.launch {
             val salesRecords = salesRepository.getSaleRecords()
@@ -298,16 +288,17 @@ class DashboardFragment : Fragment() {
             }
 
             val dataSet = LineDataSet(entries, "Monthly Sales")
-            dataSet.color = ContextCompat.getColor(requireContext(), R.color.primary_teal)
-            dataSet.valueTextColor = ContextCompat.getColor(requireContext(), R.color.black)
+            context?.let {
+                dataSet.color = ContextCompat.getColor(it, R.color.primary_teal)
+                dataSet.valueTextColor = ContextCompat.getColor(it, R.color.black)
+                dataSet.fillDrawable = ContextCompat.getDrawable(it, R.drawable.chart_fade_purple)
+            }
             dataSet.setCircleColor(dataSet.color)
             dataSet.lineWidth = 2f
             dataSet.circleRadius = 4f
             dataSet.setDrawCircleHole(false)
             dataSet.valueTextSize = 10f
             dataSet.setDrawFilled(true)
-            dataSet.fillDrawable =
-                ContextCompat.getDrawable(requireContext(), R.drawable.chart_fade_purple)
 
             val lineData = LineData(dataSet)
             lineChart.data = lineData

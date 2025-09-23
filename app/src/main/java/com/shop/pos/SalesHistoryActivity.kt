@@ -1,13 +1,13 @@
 package com.shop.pos
 
-import android.content.Intent
 import android.app.DatePickerDialog
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,6 +16,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
@@ -69,10 +70,22 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
         groupedListItems.clear()
         val groupedByDate = sales.groupBy { it.saleDate }
 
-        groupedByDate.forEach { (date, records) ->
-            groupedListItems.add(SalesHistoryListItem.DateHeader(formatDateHeader(date)))
-            records.forEach { record ->
-                groupedListItems.add(SalesHistoryListItem.SaleItem(record))
+        // Sort by date descending
+        val sortedKeys = groupedByDate.keys.sortedByDescending {
+            try {
+                SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault()).parse(it)
+            } catch (e: Exception) {
+                Date(0)
+            }
+        }
+
+        sortedKeys.forEach { date ->
+            val records = groupedByDate[date]
+            if (records != null) {
+                groupedListItems.add(SalesHistoryListItem.DateHeader(formatDateHeader(date)))
+                records.forEach { record ->
+                    groupedListItems.add(SalesHistoryListItem.SaleItem(record))
+                }
             }
         }
 
@@ -103,17 +116,14 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
         val searchView = searchItem.actionView as SearchView
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-
+            override fun onQueryTextSubmit(query: String?): Boolean = false
             override fun onQueryTextChange(newText: String?): Boolean {
                 val filteredList = if (newText.isNullOrEmpty()) {
                     originalSalesRecords
                 } else {
                     originalSalesRecords.filter {
-                        it.customerName.contains(newText, true) ||
-                                it.saleDate.contains(newText, true)
+                        it.customerName.contains(newText, ignoreCase = true) ||
+                                it.saleDate.contains(newText, ignoreCase = true)
                     }
                 }
                 groupAndDisplaySales(filteredList)
@@ -139,22 +149,16 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
         val month = calendar.get(Calendar.MONTH)
         val day = calendar.get(Calendar.DAY_OF_MONTH)
 
-        val datePickerDialog = DatePickerDialog(
-            this,
-            { _, selectedYear, selectedMonth, selectedDayOfMonth ->
-                val selectedCalendar = Calendar.getInstance()
-                selectedCalendar.set(selectedYear, selectedMonth, selectedDayOfMonth)
-                val myFormat = "dd-MMM-yyyy"
-                val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
-                val selectedDateString = sdf.format(selectedCalendar.time)
+        val datePickerDialog = DatePickerDialog(this, { _, selectedYear, selectedMonth, selectedDayOfMonth ->
+            val selectedCalendar = Calendar.getInstance()
+            selectedCalendar.set(selectedYear, selectedMonth, selectedDayOfMonth)
+            val myFormat = "dd-MMM-yyyy"
+            val sdf = SimpleDateFormat(myFormat, Locale.getDefault())
+            val selectedDateString = sdf.format(selectedCalendar.time)
 
-                val filteredList = originalSalesRecords.filter { it.saleDate == selectedDateString }
-                groupAndDisplaySales(filteredList)
-            },
-            year,
-            month,
-            day
-        )
+            val filteredList = originalSalesRecords.filter { it.saleDate == selectedDateString }
+            groupAndDisplaySales(filteredList)
+        }, year, month, day)
 
         datePickerDialog.setButton(DatePickerDialog.BUTTON_NEUTRAL, "Filter ရှင်းရန်") { _, _ ->
             groupAndDisplaySales(originalSalesRecords)
@@ -165,15 +169,11 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
 
     override fun onSaleRecordClick(saleRecord: SaleRecord) {
         val options = mutableListOf<String>()
-
-        // COD ဖြစ်မှ "Mark as Paid" option ကို ထည့်ပါ
         if (saleRecord.paymentStatus == "COD") {
             options.add("Mark as Paid")
         }
-        // Delivery status ကို ပြောင်းပြန်လုပ်မယ့် option
         val deliveryOption = if (saleRecord.isDelivered) "Mark as Not Delivered" else "Mark as Delivered"
         options.add(deliveryOption)
-
         AlertDialog.Builder(this)
             .setTitle("Update Status")
             .setItems(options.toTypedArray()) { dialog, which ->
@@ -192,7 +192,7 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
             val recordToUpdate = saleRecord.copy(paymentStatus = "ငွေရပြီး")
             salesRepository.updateSaleRecord(recordToUpdate)
             loadSalesHistory()
-            runOnUiThread {
+            runOnUiThread{
                 Toast.makeText(this@SalesHistoryActivity, "Status updated to Paid", Toast.LENGTH_SHORT).show()
             }
         }
@@ -211,16 +211,10 @@ class SalesHistoryActivity : AppCompatActivity(), SaleHistoryItemListener {
     }
 
     override fun onEditSale(saleRecord: SaleRecord) {
-        val intent = Intent(this, DashboardActivity::class.java).apply {
-            // DashboardActivity ကို ဘယ် Fragment ကို သွားရမယ်ဆိုတာ ပြောပါ
-            putExtra("TARGET_FRAGMENT", "SALES")
-            // ပြင်ဆင်ချင်တဲ့ Sale Record ရဲ့ ID ကို ထည့်ပေးလိုက်ပါ
+        val intent = Intent(this, EditSaleActivity::class.java).apply {
             putExtra("EDIT_SALE_ID", saleRecord.id)
-            // Activity အဟောင်းတွေကို ရှင်းလင်းဖို့ flag ထည့်ပါ
-            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         startActivity(intent)
-        finish() // လက်ရှိ SalesHistory screen ကို ပိတ်ပါ
     }
 
     override fun onCancelSale(saleRecord: SaleRecord) {

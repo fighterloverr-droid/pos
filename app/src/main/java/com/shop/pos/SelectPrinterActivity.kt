@@ -59,9 +59,7 @@ class SelectPrinterActivity : AppCompatActivity() {
         }
 
         val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
-        toolbar.setNavigationOnClickListener {
-            finish()
-        }
+        toolbar.setNavigationOnClickListener { finish() }
 
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
@@ -90,21 +88,28 @@ class SelectPrinterActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("Select Paper Width")
             .setItems(paperSizes) { dialog, which ->
-                val paperWidth = if (which == 0) 48f else 72f
-                printVoucher(device, paperWidth)
+                // SharedPreferences ကနေ setting ကို ဖတ်ပါ
+                val printerPrefs = getSharedPreferences("PrinterPrefs", Context.MODE_PRIVATE)
+                val charsPerLine = if (which == 0) {
+                    printerPrefs.getInt("CHARS_58MM", 32) // 58mm အတွက်
+                } else {
+                    printerPrefs.getInt("CHARS_80MM", 48) // 80mm အတွက်
+                }
+                printVoucher(device, charsPerLine)
                 dialog.dismiss()
             }
             .show()
     }
 
     @SuppressLint("MissingPermission")
-    private fun printVoucher(device: BluetoothDevice, paperWidth: Float) {
+    private fun printVoucher(device: BluetoothDevice, charactersPerLine: Int) {
         Toast.makeText(this, "Printing to ${device.name}...", Toast.LENGTH_SHORT).show()
 
         lifecycleScope.launch(Dispatchers.IO) {
             var printerService: BluetoothPrinterService? = null
             try {
-                printerService = BluetoothPrinterService(device, paperWidth)
+                // Service တည်ဆောက်တဲ့အခါ charactersPerLine ကို ထည့်ပေးပါ
+                printerService = BluetoothPrinterService(device, charactersPerLine)
                 printerService.connect()
 
                 val shopPrefs = getSharedPreferences("ShopInfoPrefs", Context.MODE_PRIVATE)
@@ -113,14 +118,16 @@ class SelectPrinterActivity : AppCompatActivity() {
                 val shopPhone = shopPrefs.getString("SHOP_PHONE", "") ?: ""
                 val numberFormat = NumberFormat.getInstance(Locale.US)
 
+                // --- Header ---
                 printerService.setAlignCenter()
                 printerService.setFontSize("tall_wide", true)
                 printerService.printLine(shopName)
                 printerService.setFontSize("normal", false)
-                if(shopAddress.isNotEmpty()) printerService.printLine(shopAddress)
-                if(shopPhone.isNotEmpty()) printerService.printLine(shopPhone)
+                if (shopAddress.isNotEmpty()) printerService.printLine(shopAddress)
+                if (shopPhone.isNotEmpty()) printerService.printLine(shopPhone)
                 printerService.feedLine()
 
+                // --- Body ---
                 printerService.setAlignLeft()
                 printerService.printLine("Date: ${saleRecordToPrint!!.saleDate}")
                 printerService.printLine("Customer: ${saleRecordToPrint!!.customerName}")
@@ -146,6 +153,7 @@ class SelectPrinterActivity : AppCompatActivity() {
                 printerService.printTwoColumn("TOTAL:", "${numberFormat.format(saleRecordToPrint!!.totalAmount.toInt())} Ks")
                 printerService.setFontSize("normal", false)
 
+                // --- Footer ---
                 printerService.setAlignCenter()
                 printerService.printLine("================================")
                 printerService.feedLine()

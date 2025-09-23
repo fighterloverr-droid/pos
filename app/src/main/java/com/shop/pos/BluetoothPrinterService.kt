@@ -10,16 +10,14 @@ import java.util.UUID
 @SuppressLint("MissingPermission")
 class BluetoothPrinterService(
     private val device: BluetoothDevice,
-    // Paper width ကို constructor ကနေ လက်ခံပါ
-    private val paperWidth: Float = 48f
+    private val charactersPerLine: Int // <-- paperWidth အစား ဒီကိုသုံးမယ်
 ) {
 
     private var outputStream: OutputStream? = null
     private var socket: BluetoothSocket? = null
 
-    // Character per line ကို paper width အလိုက် တွက်ချက်ပါ
-    // 58mm printer -> 32 chars, 80mm printer -> 48 chars
-    private val lineWidth: Int = if (paperWidth >= 72f) 48 else 32
+    // Character per line ကို constructor ကနေလက်ခံတာကို တိုက်ရိုက်သုံးမယ်
+    private val lineWidth: Int = charactersPerLine
 
     // Standard UUID for SPP (Serial Port Profile)
     private val SPP_UUID: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
@@ -60,10 +58,10 @@ class BluetoothPrinterService(
 
     fun printText(text: String) {
         try {
-            // Printer language နဲ့ ကိုက်ညီအောင် GBK encoding ကို သုံးကြည့်ပါ
+            // ESC/POS compatible encoding (GBK is common)
             write(text.toByteArray(charset("GBK")))
         } catch (e: Exception) {
-            // မရရင် standard UTF-8 ကို သုံးပါ
+            // fallback
             write(text.toByteArray(charset("UTF-8")))
         }
     }
@@ -91,9 +89,9 @@ class BluetoothPrinterService(
     }
 
     fun setFontSize(size: String, isBold: Boolean = false) {
-        if(isBold) write(CMD_FONT_BOLD) else write(CMD_FONT_NORMAL)
+        if (isBold) write(CMD_FONT_BOLD) else write(CMD_FONT_NORMAL)
 
-        when(size) {
+        when (size) {
             "wide" -> write(CMD_FONT_SIZE_WIDE)
             "tall" -> write(CMD_FONT_SIZE_TALL)
             "tall_wide" -> write(CMD_FONT_SIZE_TALL_WIDE)
@@ -102,7 +100,7 @@ class BluetoothPrinterService(
     }
 
     fun feedLine(lines: Int = 1) {
-        for (i in 1..lines) {
+        repeat(lines) {
             printText("\n")
         }
     }
