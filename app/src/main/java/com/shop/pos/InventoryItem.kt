@@ -7,15 +7,16 @@ import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-@Entity(tableName = "inventory_items", indices = [Index(value = ["code"], unique = true)]) // Code ကို unique ဖြစ်အောင် index သတ်မှတ်ပါ
+@Entity(tableName = "inventory_items", indices = [Index(value = ["code"], unique = true)])
 data class InventoryItem(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val code: String, // <-- Field အသစ်
+    val code: String?,
+    var imageUri: String? = null, // <-- Field အသစ် (ပုံရဲ့ path ကို သိမ်းရန်)
     val stockQuantity: Int,
-    val price: Double, // ရောင်းဈေး
-    val costPrice: Double, // အရင်းဈေး
+    val price: Double,
+    val costPrice: Double,
     val soldQuantity: Int = 0,
     val isForSale: Boolean = true
 ) : Parcelable

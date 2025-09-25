@@ -3,7 +3,6 @@ package com.shop.pos
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -78,15 +77,17 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
         lifecycleScope.launch {
             val purchaseItem = purchasesRepository.getPurchaseById(editingPurchaseId)
             if (purchaseItem != null) {
-                editTextSupplierName.setText(purchaseItem.supplierName)
-                textViewPurchaseDate.text = purchaseItem.purchaseDate
-                purchaseDetailItems.clear()
-                purchaseDetailItems.addAll(purchaseItem.items)
-                purchaseDetailAdapter.notifyDataSetChanged()
-                updateTotalAmount()
+                runOnUiThread {
+                    editTextSupplierName.setText(purchaseItem.supplierName)
+                    textViewPurchaseDate.text = purchaseItem.purchaseDate
+                    purchaseDetailItems.clear()
+                    purchaseDetailItems.addAll(purchaseItem.items)
+                    purchaseDetailAdapter.notifyDataSetChanged()
+                    updateTotalAmount()
 
-                val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
-                calendar.time = sdf.parse(purchaseItem.purchaseDate) ?: Date()
+                    val sdf = SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault())
+                    calendar.time = sdf.parse(purchaseItem.purchaseDate) ?: Date()
+                }
             }
         }
     }
@@ -114,7 +115,9 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
                     hasArrived = purchaseToUpdate?.hasArrived ?: false
                 )
                 purchasesRepository.updatePurchaseItem(updatedPurchase)
-                Toast.makeText(this@AddPurchaseActivity, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this@AddPurchaseActivity, "ပြင်ဆင်ပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 val newPurchase = PurchaseItem(
                     supplierName = supplierName,
@@ -124,7 +127,9 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
                     hasArrived = false
                 )
                 purchasesRepository.addPurchaseItem(newPurchase)
-                Toast.makeText(this@AddPurchaseActivity, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    Toast.makeText(this@AddPurchaseActivity, "အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ", Toast.LENGTH_SHORT).show()
+                }
             }
             finish()
         }
@@ -137,14 +142,10 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
     }
 
     private fun showAddItemDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_item, null)
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_purchase_item, null)
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
-        val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
         val editTextPrice = dialogView.findViewById<EditText>(R.id.editTextPrice)
-
-        editTextCostPrice.hint = "တစ်ခုချင်း ဝယ်ဈေး"
-        editTextPrice.visibility = View.GONE
 
         AlertDialog.Builder(this)
             .setTitle("ဝယ်ယူသည့် ပစ္စည်းထည့်ရန်")
@@ -152,7 +153,7 @@ class AddPurchaseActivity : AppCompatActivity(), PurchaseDetailItemListener {
             .setPositiveButton("ထည့်မည်") { dialog, _ ->
                 val name = editTextItemName.text.toString()
                 val quantityStr = editTextQuantity.text.toString()
-                val priceStr = editTextCostPrice.text.toString()
+                val priceStr = editTextPrice.text.toString()
 
                 if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty()) {
                     val newItem = PurchaseDetailItem(name, quantityStr.toInt(), priceStr.toDouble())

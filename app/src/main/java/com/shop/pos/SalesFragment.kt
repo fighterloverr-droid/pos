@@ -104,8 +104,7 @@ class SalesFragment : Fragment(), SalesItemListener {
         buttonCancel.setOnClickListener { clearSale() }
         buttonConfirmSale.setOnClickListener { confirmSale() }
         buttonViewSalesHistory.setOnClickListener {
-            val intent = Intent(requireContext(), SalesHistoryActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(requireContext(), SalesHistoryActivity::class.java))
         }
         buttonScanCode.setOnClickListener { showScannerSelectionDialog() }
 
@@ -146,51 +145,15 @@ class SalesFragment : Fragment(), SalesItemListener {
         updateSummary()
     }
 
-    private fun showProductSelectionDialog() {
-        lifecycleScope.launch {
-            val inventory = inventoryRepository.getForSaleItems()
-            if (inventory.isEmpty()) {
-                Toast.makeText(requireContext(), "အရောင်းတင်ရန် ပစ္စည်းမရှိပါ", Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-            val itemNames = inventory.map { "${it.name} (လက်ကျန်: ${it.stockQuantity})" }.toTypedArray()
-            AlertDialog.Builder(requireContext())
-                .setTitle("ပစ္စည်း ရွေးချယ်ပါ")
-                .setItems(itemNames) { dialog, which ->
-                    val selectedItem = inventory[which]
-                    val existingItemInCart = salesItems.find { it.name == selectedItem.name }
-                    if (existingItemInCart != null) {
-                        val index = salesItems.indexOf(existingItemInCart)
-                        onIncreaseQuantity(index)
-                    } else {
-                        val newItem = SaleItem(
-                            name = selectedItem.name,
-                            quantity = 1,
-                            price = selectedItem.price,
-                            costPrice = selectedItem.costPrice
-                        )
-                        salesItems.add(newItem)
-                        salesAdapter.notifyItemInserted(salesItems.size - 1)
-                    }
-                    updateSummary()
-                    dialog.dismiss()
-                }
-                .create()
-                .show()
-        }
-    }
-
     private fun showScannerSelectionDialog() {
         val options = arrayOf("Scan Code (OCR)", "Scan Barcode")
         AlertDialog.Builder(requireContext())
             .setTitle("Select Scanner Type")
             .setItems(options) { dialog, which ->
-                val intent = when (which) {
-                    0 -> Intent(requireContext(), ScannerActivity::class.java)
-                    1 -> Intent(requireContext(), BarcodeScannerActivity::class.java)
-                    else -> return@setItems
+                when (which) {
+                    0 -> scannerLauncher.launch(Intent(requireContext(), ScannerActivity::class.java))
+                    1 -> scannerLauncher.launch(Intent(requireContext(), BarcodeScannerActivity::class.java))
                 }
-                scannerLauncher.launch(intent)
                 dialog.dismiss()
             }
             .show()
@@ -199,24 +162,65 @@ class SalesFragment : Fragment(), SalesItemListener {
     private fun findAndAddItemByCode(code: String) {
         lifecycleScope.launch {
             val itemFromDb = inventoryRepository.findItemByCode(code)
-            if (itemFromDb != null) {
-                val existingItemInCart = salesItems.find { it.name == itemFromDb.name }
-                if (existingItemInCart != null) {
-                    val index = salesItems.indexOf(existingItemInCart)
-                    onIncreaseQuantity(index)
+            activity?.runOnUiThread {
+                if (itemFromDb != null) {
+                    val existingItemInCart = salesItems.find { it.name == itemFromDb.name }
+                    if (existingItemInCart != null) {
+                        val index = salesItems.indexOf(existingItemInCart)
+                        onIncreaseQuantity(index)
+                    } else {
+                        val newItem = SaleItem(
+                            name = itemFromDb.name,
+                            quantity = 1,
+                            price = itemFromDb.price,
+                            costPrice = itemFromDb.costPrice,
+                            imageUri = itemFromDb.imageUri // <-- imageUri ကိုပါ ထည့်ပါ
+                        )
+                        salesItems.add(newItem)
+                        salesAdapter.notifyItemInserted(salesItems.size - 1)
+                    }
+                    updateSummary()
                 } else {
-                    val newItem = SaleItem(
-                        name = itemFromDb.name,
-                        quantity = 1,
-                        price = itemFromDb.price,
-                        costPrice = itemFromDb.costPrice
-                    )
-                    salesItems.add(newItem)
-                    salesAdapter.notifyItemInserted(salesItems.size - 1)
+                    Toast.makeText(requireContext(), "Code '$code' not found", Toast.LENGTH_SHORT).show()
                 }
-                updateSummary()
-            } else {
-                Toast.makeText(requireContext(), "Code '$code' not found in inventory", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showProductSelectionDialog() {
+        lifecycleScope.launch {
+            val inventory = inventoryRepository.getForSaleItems()
+            if (inventory.isEmpty()) {
+                activity?.runOnUiThread { Toast.makeText(requireContext(), "အရောင်းတင်ရန် ပစ္စည်းမရှိပါ", Toast.LENGTH_SHORT).show() }
+                return@launch
+            }
+            val itemNames = inventory.map { "${it.name} (လက်ကျန်: ${it.stockQuantity})" }.toTypedArray()
+
+            activity?.runOnUiThread {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("ပစ္စည်း ရွေးချယ်ပါ")
+                    .setItems(itemNames) { dialog, which ->
+                        val selectedItem = inventory[which]
+                        val existingItemInCart = salesItems.find { it.name == selectedItem.name }
+                        if (existingItemInCart != null) {
+                            val index = salesItems.indexOf(existingItemInCart)
+                            onIncreaseQuantity(index)
+                        } else {
+                            val newItem = SaleItem(
+                                name = selectedItem.name,
+                                quantity = 1,
+                                price = selectedItem.price,
+                                costPrice = selectedItem.costPrice,
+                                imageUri = selectedItem.imageUri // <-- imageUri ကိုပါ ထည့်ပါ
+                            )
+                            salesItems.add(newItem)
+                            salesAdapter.notifyItemInserted(salesItems.size - 1)
+                        }
+                        updateSummary()
+                        dialog.dismiss()
+                    }
+                    .create()
+                    .show()
             }
         }
     }
@@ -226,7 +230,6 @@ class SalesFragment : Fragment(), SalesItemListener {
             Toast.makeText(requireContext(), "ကျေးဇူးပြု၍ ပစ္စည်းများ အရင်ထည့်ပါ", Toast.LENGTH_SHORT).show()
             return
         }
-
         lifecycleScope.launch {
             val isStockAvailable = inventoryRepository.deductStockFromSale(salesItems)
             if (!isStockAvailable) {
@@ -301,3 +304,4 @@ class SalesFragment : Fragment(), SalesItemListener {
         updateSummary()
     }
 }
+

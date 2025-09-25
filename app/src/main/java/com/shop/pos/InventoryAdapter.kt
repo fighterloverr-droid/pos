@@ -1,16 +1,18 @@
 package com.shop.pos
 
 import android.graphics.Color
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import java.text.NumberFormat
 import java.util.Locale
 
-// Interface ကို ဒီနေရာမှာ ကြေညာပါ
 interface InventoryItemListener {
     fun onEditItem(position: Int)
     fun onDeleteItem(position: Int)
@@ -22,8 +24,9 @@ class InventoryAdapter(
 ) : RecyclerView.Adapter<InventoryAdapter.InventoryViewHolder>() {
 
     inner class InventoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val imageViewItem: ImageView = itemView.findViewById(R.id.imageViewItem)
         val itemName: TextView = itemView.findViewById(R.id.textViewItemName)
-        val itemCode: TextView = itemView.findViewById(R.id.textViewItemCode) // အသစ်ထည့်ထားသည်
+        val itemCode: TextView = itemView.findViewById(R.id.textViewItemCode)
         val itemStock: TextView = itemView.findViewById(R.id.textViewStock)
         val itemPrice: TextView = itemView.findViewById(R.id.textViewPrice)
         val soldCount: TextView = itemView.findViewById(R.id.textViewSoldCount)
@@ -48,8 +51,7 @@ class InventoryAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InventoryViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.list_item_inventory, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.list_item_inventory, parent, false)
         return InventoryViewHolder(view)
     }
 
@@ -58,18 +60,27 @@ class InventoryAdapter(
     }
 
     override fun onBindViewHolder(holder: InventoryViewHolder, position: Int) {
+
         val currentItem = items[position]
         val numberFormat = NumberFormat.getNumberInstance(Locale.US)
 
-        // အချက်အလက်များ binding
+        // Load image using Coil
+        if (!currentItem.imageUri.isNullOrEmpty()) {
+            holder.imageViewItem.load(Uri.parse(currentItem.imageUri)) {
+                crossfade(true)
+                placeholder(R.drawable.ic_inventory)
+                error(R.drawable.ic_inventory)
+            }
+        } else {
+            holder.imageViewItem.setImageResource(R.drawable.ic_inventory)
+        }
+
         holder.itemName.text = currentItem.name
-        holder.itemCode.text = "Code: ${currentItem.code}" // အသစ်ထည့်ထားသည်
+        holder.itemCode.text = "Code: ${currentItem.code ?: "N/A"}" // <-- null check ထည့်ထားသည်
         holder.itemStock.text = "လက်ကျန်: ${currentItem.stockQuantity}"
         holder.soldCount.text = "ရောင်းပြီး: ${currentItem.soldQuantity}"
-        holder.costPrice.text =
-            "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
-        holder.itemPrice.text =
-            "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
+        holder.costPrice.text = "အရင်း: ${numberFormat.format(currentItem.costPrice.toInt())} Ks"
+        holder.itemPrice.text = "ရောင်း: ${numberFormat.format(currentItem.price.toInt())} Ks"
 
         if (currentItem.isForSale) {
             holder.forSaleStatus.text = "အရောင်းတင်ထားသည်"

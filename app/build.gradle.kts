@@ -76,4 +76,6 @@ dependencies {
 
     // ML Kit Barcode Scanning (dependency အသစ်)
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    implementation("io.coil-kt:coil:2.6.0")
 }

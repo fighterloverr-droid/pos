@@ -1,16 +1,23 @@
 package com.shop.pos
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
@@ -23,6 +30,24 @@ class InventoryFragment : Fragment(), InventoryItemListener {
     private lateinit var inventoryRepository: InventoryRepository
 
     private var inventoryItems = mutableListOf<InventoryItem>()
+
+    // Dialog ထဲက UI element တွေအတွက် global variable များ
+    private var selectedImageUri: Uri? = null
+    private lateinit var dialogImageViewPreview: ImageView
+
+    // Gallery ကနေ ပုံရွေးပြီး ပြန်လာရင် အလုပ်လုပ်မယ့် Launcher
+    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                val contentResolver = requireActivity().contentResolver
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+
+                selectedImageUri = uri
+                dialogImageViewPreview.load(uri)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -66,9 +91,10 @@ class InventoryFragment : Fragment(), InventoryItemListener {
     }
 
     private fun showAddItemDialog(position: Int = -1) {
-        val dialogView =
-            LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null)
 
+        dialogImageViewPreview = dialogView.findViewById(R.id.imageViewPreview)
+        val buttonChooseImage = dialogView.findViewById<Button>(R.id.buttonChooseImage)
         val editTextItemName = dialogView.findViewById<EditText>(R.id.editTextItemName)
         val editTextItemCode = dialogView.findViewById<EditText>(R.id.editTextItemCode)
         val editTextQuantity = dialogView.findViewById<EditText>(R.id.editTextQuantity)
@@ -76,18 +102,36 @@ class InventoryFragment : Fragment(), InventoryItemListener {
         val editTextCostPrice = dialogView.findViewById<EditText>(R.id.editTextCostPrice)
         val switchForSale = dialogView.findViewById<SwitchMaterial>(R.id.switchForSale)
 
+        selectedImageUri = null
+
         val isEditing = position != -1
-        val dialogTitle =
-            if (isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
+        val dialogTitle = if (isEditing) "ပစ္စည်း အချက်အလက် ပြင်ဆင်ရန်" else "ပစ္စည်းအသစ် ထည့်သွင်းပါ"
 
         if (isEditing) {
             val item = inventoryItems[position]
             editTextItemName.setText(item.name)
-            editTextItemCode.setText(item.code)
+            editTextItemCode.setText(item.code ?: "")   // null check
             editTextQuantity.setText(item.stockQuantity.toString())
             editTextPrice.setText(item.price.toString())
             editTextCostPrice.setText(item.costPrice.toString())
             switchForSale.isChecked = item.isForSale
+
+            if (!item.imageUri.isNullOrEmpty()) {
+                selectedImageUri = Uri.parse(item.imageUri)
+                dialogImageViewPreview.load(selectedImageUri)
+            } else {
+                dialogImageViewPreview.setImageResource(R.drawable.ic_add_photo)
+            }
+        } else {
+            dialogImageViewPreview.setImageResource(R.drawable.ic_add_photo)
+        }
+
+        buttonChooseImage.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            imagePickerLauncher.launch(intent)
         }
 
         AlertDialog.Builder(requireContext())
@@ -95,13 +139,12 @@ class InventoryFragment : Fragment(), InventoryItemListener {
             .setView(dialogView)
             .setPositiveButton("သိမ်းမည်") { dialog, _ ->
                 val name = editTextItemName.text.toString()
-                val code = editTextItemCode.text.toString()
+                val code = editTextItemCode.text.toString().ifEmpty { null } // အလွတ်ဆိုရင် null
                 val quantityStr = editTextQuantity.text.toString()
                 val priceStr = editTextPrice.text.toString()
                 val costPriceStr = editTextCostPrice.text.toString()
                 val isForSale = switchForSale.isChecked
 
-                // code အကွက်ကလွဲပြီး ကျန်တဲ့အကွက်တွေ ပြည့်စုံရင် save ခွင့်ပြုပါ
                 if (name.isNotEmpty() && quantityStr.isNotEmpty() && priceStr.isNotEmpty() && costPriceStr.isNotEmpty()) {
                     val price = priceStr.toDouble()
                     val costPrice = costPriceStr.toDouble()
@@ -111,7 +154,8 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                             val oldItem = inventoryItems[position]
                             val updatedItem = oldItem.copy(
                                 name = name,
-                                code = code, // code က အလွတ်ဖြစ်ချင်ဖြစ်နေပါမယ်
+                                code = code,
+                                imageUri = selectedImageUri?.toString(),
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
@@ -121,7 +165,8 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                         } else {
                             val newItem = InventoryItem(
                                 name = name,
-                                code = code, // code က အလွတ်ဖြစ်ချင်ဖြစ်နေပါမယ်
+                                code = code,
+                                imageUri = selectedImageUri?.toString(),
                                 stockQuantity = quantityStr.toInt(),
                                 price = price,
                                 costPrice = costPrice,
@@ -133,11 +178,7 @@ class InventoryFragment : Fragment(), InventoryItemListener {
                     }
                     dialog.dismiss()
                 } else {
-                    Toast.makeText(
-                        requireContext(),
-                        "အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast.makeText(requireContext(), "အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("မလုပ်တော့ပါ") { dialog, _ ->

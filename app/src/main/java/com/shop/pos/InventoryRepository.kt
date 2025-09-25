@@ -35,16 +35,17 @@ class InventoryRepository(private val inventoryDao: InventoryDao) {
                 val existingItem = inventoryDao.findItemByName(purchasedItem.name)
                 if (existingItem != null) {
                     val updatedQuantity = existingItem.stockQuantity + purchasedItem.quantity
-                    // အမှားပြင်ဆင်ပြီး: purchasedİtem -> purchasedItem
                     val updatedItem = existingItem.copy(
                         stockQuantity = updatedQuantity,
                         costPrice = purchasedItem.purchasePrice
                     )
                     inventoryDao.update(updatedItem)
                 } else {
+                    // newItem တည်ဆောက်တဲ့အခါ imageUri field အတွက် null ထည့်ပေးပါ
                     val newItem = InventoryItem(
                         name = purchasedItem.name,
-                        code = "",
+                        code = null,
+                        imageUri = null, // <-- Default imageUri အလွတ် ထည့်ပါ
                         stockQuantity = purchasedItem.quantity,
                         price = purchasedItem.purchasePrice,
                         costPrice = purchasedItem.purchasePrice

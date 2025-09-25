@@ -1,54 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:layout_height="wrap_content">
 
-    <EditText
-        android:id="@+id/editTextItemName"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="ပစ္စည်းအမည်"
-        android:inputType="text" />
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <EditText
-        android:id="@+id/editTextItemCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Product Code (e.g., SKU-001)"
-        android:inputType="textCapCharacters" />
+        <ImageView
+            android:id="@+id/imageViewPreview"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_add_photo" />
 
-    <EditText
-        android:id="@+id/editTextQuantity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="လက်ကျန် အရေအတွက်"
-        android:inputType="number" />
+        <Button
+            android:id="@+id/buttonChooseImage"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ပုံရွေးချယ်ရန်" />
 
-    <EditText
-        android:id="@+id/editTextCostPrice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="အရင်းဈေး (Ks)"
-        android:inputType="numberDecimal" />
+        <EditText
+            android:id="@+id/editTextItemName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="ပစ္စည်းအမည်"
+            android:inputType="text" />
 
-    <EditText
-        android:id="@+id/editTextPrice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="ရောင်းဈေး (Ks)"
-        android:inputType="numberDecimal" />
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/switchForSale"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textSize="16sp"
-        android:text="အရောင်းတင်မည်"
-        android:checked="true"/>
-</LinearLayout>
+        <EditText
+            android:id="@+id/editTextItemCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Product Code (e.g., SKU-001)"
+            android:inputType="textCapCharacters" />
+
+        <EditText
+            android:id="@+id/editTextQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="လက်ကျန် အရေအတွက်"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/editTextCostPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="အရင်းဈေး (Ks)"
+            android:inputType="numberDecimal" />
+
+        <EditText
+            android:id="@+id/editTextPrice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="ရောင်းဈေး (Ks)"
+            android:inputType="numberDecimal" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchForSale"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="16sp"
+            android:text="အရောင်းတင်မည်"
+            android:checked="true"/>
+
+    </LinearLayout>
+</ScrollView>
