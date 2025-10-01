@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+    <TextView
+        android:id="@+id/textViewItemDescription"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        tools:text="Coca-Cola (2 x 1,000)"
+        android:textColor="@android:color/black"/>
+    <TextView
+        android:id="@+id/textViewItemAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="2,000"
+        android:gravity="end"
+        android:textColor="@android:color/black"/>
+</LinearLayout>

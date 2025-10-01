@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ဆိုင်လက်စွဲ</string>
+
+    <!-- Navigation & Toolbar Titles -->
+    <string name="title_dashboard">ပင်မစာမျက်နှာ</string>
+    <string name="title_sales">အရောင်း</string>
+    <string name="title_inventory">ပစ္စည်းစာရင်း</string>
+    <string name="title_purchases">အဝယ်စာရင်း</string>
+    <string name="title_expenses">ကုန်ကျစရိတ်</string>
+    <string name="title_settings">အချက်အလက်</string>
+
+    <!-- Dashboard Chart Titles -->
+    <string name="dashboard_daily_sales">နောက်ဆုံး ၇ ရက်၏ နေ့စဉ်ရောင်းအား</string>
+    <string name="dashboard_monthly_expenses">လစဉ်ကုန်ကျစရိတ်များ (အမျိုးအစားအလိုက်)</string>
+    <string name="dashboard_monthly_trend">လစဉ်ရောင်းအား</string>
+
+    <string name="import_from_csv">Excel File မှစာရင်းသွင်းမည်</string>
+</resources>
+

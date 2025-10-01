@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SettingsActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                app:navigationIcon="@drawable/ic_arrow_back"
+                app:title="@string/title_settings" />
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- License Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="License Information"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/textViewLicenseStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textSize="16sp"
+                tools:text="Status: Trial Version"/>
+            <Button
+                android:id="@+id/buttonActivateNow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Activate Full Version"
+                style="@style/Widget.Material3.Button.UnelevatedButton"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
+            <!-- Shop Info Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="လုပ်ငန်းအချက်အလက်"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+            <EditText
+                android:id="@+id/editTextShopName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆိုင်အမည်"
+                android:inputType="text" />
+            <EditText
+                android:id="@+id/editTextShopAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆိုင်လိပ်စာ"
+                android:inputType="text" />
+            <EditText
+                android:id="@+id/editTextShopPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="ဆက်သွယ်ရန် ဖုန်းနံပါတ်"
+                android:inputType="phone" />
+            <Button
+                android:id="@+id/buttonSaveShopInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="သိမ်းဆည်းမည်"/>
+
+            <!-- Security Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="လုံခြုံရေး"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchPinLock"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="PIN Lock ဖြင့် App ကို ကာကွယ်ရန်"
+                android:textSize="18sp"/>
+            <TextView
+                android:id="@+id/textViewChangePin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PIN နံပါတ် ပြောင်းရန်"
+                android:textSize="18sp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <!-- Data Management Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Data စီမံခန့်ခွဲမှု"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+
+            <!-- Customer List Button အသစ် -->
+            <Button
+                android:id="@+id/buttonCustomerList"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="ဖောက်သည်များ စာရင်း ကြည့်ရန်" />
+
+            <Button
+                android:id="@+id/buttonBackupData"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Data Backup ထုတ်ရန်" />
+            <Button
+                android:id="@+id/buttonRestoreData"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Data Restore လုပ်ရန်" />
+            <Button
+                android:id="@+id/buttonExportSales"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="အရောင်းစာရင်း Excel ထုတ်ရန် " />
+            <Button
+                android:id="@+id/buttonExportInventory"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="ပစ္စည်းစာရင်း Excel ထုတ်ရန် " />
+
+            <!-- Printer Settings Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Printer Settings"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold" />
+            <EditText
+                android:id="@+id/editTextChars58mm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Characters per line for 58mm"
+                android:inputType="number" />
+            <EditText
+                android:id="@+id/editTextChars80mm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="Characters per line for 80mm"
+                android:inputType="number" />
+            <Button
+                android:id="@+id/buttonSavePrinterInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Save Printer Settings" />
+
+            <!-- How to Use Link Section -->
+            <TextView
+                android:id="@+id/textViewHowToUse"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:gravity="center"
+                android:text="Application အသုံးပြုနည်းကြည့်ရန်\nhttps://sites.google.com/view/sinelatswe/home"
+                android:autoLink="web"
+                android:textColorLink="?attr/colorPrimary"
+                android:linksClickable="true" />
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
+

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/editTextCustomerNameDialog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Customer အမည်"
+        android:inputType="textPersonName"/>
+
+    <EditText
+        android:id="@+id/editTextCustomerPhoneDialog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="ဖုန်းနံပါတ် (Optional)"
+        android:inputType="phone"/>
+
+    <EditText
+        android:id="@+id/editTextCustomerAddressDialog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="လိပ်စာ (Optional)"
+        android:inputType="textPostalAddress"/>
+
+</LinearLayout>

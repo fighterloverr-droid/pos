@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PIN နံပါတ် ထည့်သွင်းပါ"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        app:layout_constraintBottom_toTopOf="@id/textViewPinDisplay"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.3"/>
+
+    <TextView
+        android:id="@+id/textViewPinDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:letterSpacing="0.3"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/gridLayoutButtons"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewTitle"
+        tools:text="****" />
+
+    <GridLayout
+        android:id="@+id/gridLayoutButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/textViewPinDisplay"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <Button
+            android:id="@+id/button1"
+            style="@style/PinPadButton"
+            android:text="1" />
+        <Button
+            android:id="@+id/button2"
+            style="@style/PinPadButton"
+            android:text="2" />
+        <Button
+            android:id="@+id/button3"
+            style="@style/PinPadButton"
+            android:text="3" />
+        <Button
+            android:id="@+id/button4"
+            style="@style/PinPadButton"
+            android:text="4" />
+        <Button
+            android:id="@+id/button5"
+            style="@style/PinPadButton"
+            android:text="5" />
+        <Button
+            android:id="@+id/button6"
+            style="@style/PinPadButton"
+            android:text="6" />
+        <Button
+            android:id="@+id/button7"
+            style="@style/PinPadButton"
+            android:text="7" />
+        <Button
+            android:id="@+id/button8"
+            style="@style/PinPadButton"
+            android:text="8" />
+        <Button
+            android:id="@+id/button9"
+            style="@style/PinPadButton"
+            android:text="9" />
+
+        <View
+            style="@style/PinPadImageButton"/>
+
+        <Button
+            android:id="@+id/button0"
+            style="@style/PinPadButton"
+            android:text="0" />
+
+        <ImageButton
+            android:id="@+id/buttonBackspace"
+            style="@style/PinPadImageButton"
+            android:contentDescription="Backspace"
+            android:src="@drawable/ic_backspace" />
+
+    </GridLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    tools:context=".ActivationActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="License Activation"
+        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="ကျေးဇူးပြု၍ အောက်ပါ Device ID ကို ဆိုင်လက်စွဲ facebook messanger ဆီသို့ ပေးပို့ပြီး activation key ရယူပါ။"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="သင်၏ Device ID:"/>
+
+    <TextView
+        android:id="@+id/textViewDeviceId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textIsSelectable="true"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        tools:text="1234567890abcdef"/>
+
+    <Button
+        android:id="@+id/buttonCopyId"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ID ကို Copy ကူးပါ"/>
+
+    <!-- EditText ကို ScrollView ထဲသို့ ထည့်ပါ -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="24dp">
+        <EditText
+            android:id="@+id/editTextActivationKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:hint="Activation Key ကို ဤနေရာတွင် ထည့်ပါ"/>
+    </ScrollView>
+
+
+    <Button
+        android:id="@+id/buttonActivate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Activate"/>
+
+</LinearLayout>
