@@ -171,11 +171,44 @@ class SelectPrinterActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionsAndFindDevices() {
-        // ... (this function is the same)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.BLUETOOTH_CONNECT
+                ) != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.BLUETOOTH_SCAN
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestBluetoothPermissions.launch(
+                    arrayOf(
+                        Manifest.permission.BLUETOOTH_CONNECT,
+                        Manifest.permission.BLUETOOTH_SCAN
+                    )
+                )
+            } else {
+                findPairedDevices()
+            }
+        } else {
+            findPairedDevices()
+        }
     }
 
     @SuppressLint("MissingPermission")
     private fun findPairedDevices() {
-        // ... (this function is the same)
+        if (bluetoothAdapter?.isEnabled == false) {
+            Toast.makeText(this, "Please enable Bluetooth", Toast.LENGTH_LONG).show()
+            return
+        }
+        val devices = bluetoothAdapter?.bondedDevices
+        pairedDevices.clear()
+        if (devices != null) {
+            pairedDevices.addAll(devices)
+        }
+        deviceAdapter.notifyDataSetChanged()
+        if (pairedDevices.isEmpty()) {
+            Toast.makeText(this, "No paired devices found", Toast.LENGTH_SHORT).show()
+        }
     }
 }
